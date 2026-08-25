@@ -310,8 +310,89 @@ public final class NerionP2PClient {
      * @param friendPlayerAccountId {@link Friend#getPlayerAccountId()} of the friend to invite.
      */
     public void inviteFriendToSession(String friendPlayerAccountId) {
-        String encoded = java.net.URLEncoder.encode(friendPlayerAccountId, java.nio.charset.StandardCharsets.UTF_8);
-        http.postNoBody("/v1/social/invite/" + encoded);
+        http.postNoBody("/v1/social/invite/" + encodePathSegment(friendPlayerAccountId));
+    }
+
+    // ======================== SOCIAL — FRIEND REQUESTS (doc §8.16-§8.20) ========================
+
+    /**
+     * {@code GET /v1/social/requests} — friend requests the caller has RECEIVED. Scope
+     * {@code social.friends.read}.
+     */
+    public FriendRequestsResponse getFriendRequests() {
+        return FriendRequestsResponse.fromJson(http.get("/v1/social/requests"));
+    }
+
+    /**
+     * {@code GET /v1/social/requests/sent} — friend requests the caller has SENT. See
+     * {@link FriendRequest}'s class javadoc for a field-naming quirk specific to this endpoint's
+     * response shape. Scope {@code social.friends.read}.
+     */
+    public FriendRequestsResponse getSentFriendRequests() {
+        return FriendRequestsResponse.fromJson(http.get("/v1/social/requests/sent"));
+    }
+
+    /**
+     * {@code POST /v1/social/requests} — sends a friend request to the given player. Scope
+     * {@code social.friends.write}.
+     *
+     * @throws me.feeldev.nerionp2p.internal.P2PApiException with {@code isInvalidTarget()} true if
+     *         {@code playerAccountId} is missing/malformed, or {@code isBackendError()} true for
+     *         anything the backend rejects (already friends, already pending, unknown account —
+     *         none of these get a dedicated code, per doc §8.17).
+     */
+    public void sendFriendRequest(String playerAccountId) {
+        JsonBuilder body = new JsonBuilder().put("playerAccountId", playerAccountId);
+        http.post("/v1/social/requests", body.build());
+    }
+
+    /**
+     * {@code POST /v1/social/requests/{requestId}/accept} — accepts a request the caller
+     * RECEIVED. {@code requestId} comes from {@link #getFriendRequests()}. Scope
+     * {@code social.friends.write}.
+     */
+    public void acceptFriendRequest(String requestId) {
+        http.postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/accept");
+    }
+
+    /**
+     * {@code POST /v1/social/requests/{requestId}/reject} — rejects a request the caller
+     * RECEIVED. Same {@code requestId} source as {@link #acceptFriendRequest(String)}. Scope
+     * {@code social.friends.write}.
+     */
+    public void rejectFriendRequest(String requestId) {
+        http.postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/reject");
+    }
+
+    /**
+     * {@code POST /v1/social/requests/{requestId}/cancel} — cancels a request the caller SENT
+     * (not one they received — see {@link #rejectFriendRequest(String)} for that). {@code requestId}
+     * comes from {@link #getSentFriendRequests()}. Scope {@code social.friends.write}.
+     */
+    public void cancelFriendRequest(String requestId) {
+        http.postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/cancel");
+    }
+
+    // ======================== SOCIAL — FRIENDS MANAGEMENT (doc §8.21, §8.22) ========================
+
+    /**
+     * {@code POST /v1/social/friends/{friendPlayerAccountId}/remove} — removes an existing
+     * friend. {@code friendPlayerAccountId} is {@link Friend#getPlayerAccountId()}. Scope
+     * {@code social.friends.write}.
+     */
+    public void removeFriend(String friendPlayerAccountId) {
+        http.postNoBody("/v1/social/friends/" + encodePathSegment(friendPlayerAccountId) + "/remove");
+    }
+
+    /**
+     * {@code POST /v1/social/friends/{friendshipId}/favorite} — toggles favorite status on an
+     * existing friendship (favorite &#8594; not-favorite, or the reverse — this route doesn't take
+     * a target state). {@code friendshipId} is {@link Friend#getFriendshipId()} — <b>not</b> the
+     * same value as {@link Friend#getPlayerAccountId()} used by {@link #removeFriend(String)},
+     * don't mix the two up. Scope {@code social.friends.write}.
+     */
+    public void toggleFavorite(String friendshipId) {
+        http.postNoBody("/v1/social/friends/" + encodePathSegment(friendshipId) + "/favorite");
     }
 
     // ======================== PRIVATE ========================
@@ -322,6 +403,10 @@ public final class NerionP2PClient {
         if (config.getOnConnected() != null) {
             config.getOnConnected().run();
         }
+    }
+
+    private static String encodePathSegment(String value) {
+        return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     private static String extraPortsToJson(List<ExtraPort> extraPorts) {

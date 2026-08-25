@@ -8,7 +8,7 @@ Java tool. Full contract: `docs/mod-api/api-reference.md` in the app-launcher re
 
 ```gradle
 repositories { mavenLocal() }
-dependencies { implementation "me.feeldev:nerion-p2p-sdk:1.2.0" }
+dependencies { implementation "me.feeldev:nerion-p2p-sdk:1.3.0" }
 ```
 
 ## Connect
@@ -68,6 +68,26 @@ for (Friend friend : friends) {
 // requires the caller to already be playing an instance (true for a client mod, since it's
 // running inside the Minecraft process the launcher just started)
 client.inviteFriendToSession(friends.get(0).getPlayerAccountId());
+```
+
+## Manage friend requests
+
+```java
+for (FriendRequest req : client.getFriendRequests().getRequests()) {
+    System.out.println(req.getFromPlayerName() + " wants to be friends");
+    client.acceptFriendRequest(req.getRequestId());
+}
+
+client.sendFriendRequest(someOtherPlayerAccountId);
+
+// check on it later, or withdraw it:
+for (FriendRequest sent : client.getSentFriendRequests().getRequests()) {
+    client.cancelFriendRequest(sent.getRequestId());
+}
+
+// once you're friends:
+client.toggleFavorite(friend.getFriendshipId()); // NOT friend.getPlayerAccountId()
+client.removeFriend(friend.getPlayerAccountId());
 ```
 
 ## Error handling
