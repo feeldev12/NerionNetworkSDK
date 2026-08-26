@@ -11,10 +11,10 @@ public final class SessionInfo {
     private final String p2pSessionId;
     private final String publicHost;
     private final int publicPort;
-    private final int relayPort;
+    private final Integer relayPort;
     private final String visibility;
 
-    public SessionInfo(String tunnelId, String p2pSessionId, String publicHost, int publicPort, int relayPort, String visibility) {
+    public SessionInfo(String tunnelId, String p2pSessionId, String publicHost, int publicPort, Integer relayPort, String visibility) {
         this.tunnelId = tunnelId;
         this.p2pSessionId = p2pSessionId;
         this.publicHost = publicHost;
@@ -27,7 +27,9 @@ public final class SessionInfo {
     public String getP2pSessionId() { return p2pSessionId; }
     public String getPublicHost() { return publicHost; }
     public int getPublicPort() { return publicPort; }
-    public int getRelayPort() { return relayPort; }
+
+    /** Public relay port, or null when this session isn't (currently) using relay fallback. */
+    public Integer getRelayPort() { return relayPort; }
 
     /** Current visibility of this tunnel, or null if the launcher is too old to report it. */
     public String getVisibility() { return visibility; }
@@ -37,7 +39,7 @@ public final class SessionInfo {
         String p2pSessionId = NerionHttp.extractNullableString(json, "p2pSessionId");
         String publicHost = NerionHttp.extractString(json, "publicHost");
         int publicPort = NerionHttp.extractInt(json, "publicPort");
-        int relayPort = NerionHttp.extractInt(json, "relayPort");
+        Integer relayPort = NerionHttp.extractNullableInt(json, "relayPort");
         String visibility = NerionHttp.extractNullableString(json, "visibility");
         return new SessionInfo(tunnelId, p2pSessionId, publicHost, publicPort, relayPort, visibility);
     }
