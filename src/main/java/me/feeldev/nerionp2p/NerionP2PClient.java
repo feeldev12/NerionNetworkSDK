@@ -117,6 +117,17 @@ public final class NerionP2PClient {
         return SessionInfo.fromJson(http.get("/v1/p2p/session"));
     }
 
+    /**
+     * {@code POST /v1/p2p/visibility} — changes MY OWN active tunnel's visibility, including a
+     * session the launcher UI started. Same active-tunnel precondition as {@link #getInvite()}.
+     * Scope {@code p2p.session}.
+     * @param visibility one of {@code PUBLIC}, {@code FRIENDS_ONLY}, {@code PRIVATE}.
+     */
+    public void setVisibility(String visibility) {
+        JsonBuilder body = new JsonBuilder().put("visibility", visibility);
+        http.post("/v1/p2p/visibility", body.build());
+    }
+
     // ======================== DISCOVERY (doc §8.5, §8.6) ========================
 
     /**
