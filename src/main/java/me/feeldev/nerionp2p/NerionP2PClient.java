@@ -295,6 +295,34 @@ public final class NerionP2PClient {
     }
 
     /**
+     * Joins a friend's currently joinable live session (doc §4.3), branching on
+     * {@link Friend#getJoinTargetSource()}:
+     * <ul>
+     *   <li>{@code "TUNNEL"} — delegates to {@link #joinByTunnelId(String)}, unchanged, the proven path.</li>
+     *   <li>{@code "ROOM"} — {@code POST /v1/social/join}, scope {@code p2p.join} (reused, not a new scope).</li>
+     * </ul>
+     * Always re-check {@link Friend#isJoinable()} before calling this — it throws
+     * {@link IllegalArgumentException} immediately, without making any request, if the friend has
+     * no valid join target.
+     *
+     * @throws IllegalArgumentException if {@code friend.isJoinable()} is false.
+     */
+    public JoinResult joinFriend(Friend friend) {
+        String source = friend.getJoinTargetSource();
+        if ("TUNNEL".equals(source)) {
+            return joinByTunnelId(friend.getJoinTargetId());
+        }
+        if ("ROOM".equals(source)) {
+            JsonBuilder body = new JsonBuilder()
+                    .put("source", "ROOM")
+                    .put("targetId", friend.getJoinTargetId());
+            return JoinResult.fromJson(http.post("/v1/social/join", body.build()));
+        }
+        throw new IllegalArgumentException(
+                "friend has no join target — check Friend#isJoinable() before calling joinFriend()");
+    }
+
+    /**
      * {@code POST /v1/social/invite/{friendPlayerAccountId}} — invites the given friend to join the
      * CALLER's currently active play session. No request body — the launcher resolves both "who is
      * calling" (the bearer token) and "which session they're inviting the friend to" (the caller's own
