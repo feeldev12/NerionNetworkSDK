@@ -23,11 +23,28 @@ public final class Friend {
     private final Long lastActiveAt;
     private final boolean favorite;
     private final String socialLinksJson;
+    private final String joinTargetSource;
+    private final String joinTargetId;
+    private final String joinTargetInstanceId;
 
+    /**
+     * Legacy 13-arg constructor, kept for source/binary compatibility. Delegates to the 16-arg
+     * constructor with all three join-target fields {@code null} (not joinable).
+     */
     public Friend(String friendshipId, String playerAccountId, String username, String playerName,
                   String mcUsername, String avatarUrl, String primarySkinUrl, boolean online,
                   String currentInstanceId, String currentInstanceName, Long lastActiveAt,
                   boolean favorite, String socialLinksJson) {
+        this(friendshipId, playerAccountId, username, playerName, mcUsername, avatarUrl,
+                primarySkinUrl, online, currentInstanceId, currentInstanceName, lastActiveAt,
+                favorite, socialLinksJson, null, null, null);
+    }
+
+    public Friend(String friendshipId, String playerAccountId, String username, String playerName,
+                  String mcUsername, String avatarUrl, String primarySkinUrl, boolean online,
+                  String currentInstanceId, String currentInstanceName, Long lastActiveAt,
+                  boolean favorite, String socialLinksJson,
+                  String joinTargetSource, String joinTargetId, String joinTargetInstanceId) {
         this.friendshipId = friendshipId;
         this.playerAccountId = playerAccountId;
         this.username = username;
@@ -41,6 +58,9 @@ public final class Friend {
         this.lastActiveAt = lastActiveAt;
         this.favorite = favorite;
         this.socialLinksJson = socialLinksJson;
+        this.joinTargetSource = joinTargetSource;
+        this.joinTargetId = joinTargetId;
+        this.joinTargetInstanceId = joinTargetInstanceId;
     }
 
     public String getFriendshipId() {
@@ -103,6 +123,33 @@ public final class Friend {
         return socialLinksJson;
     }
 
+    /**
+     * {@code "TUNNEL"} or {@code "ROOM"} — which live session this friend is currently joinable
+     * through, or {@code null} if none (all three {@code joinTarget*} fields are null-as-a-group).
+     * See {@link #isJoinable()}.
+     */
+    public String getJoinTargetSource() {
+        return joinTargetSource;
+    }
+
+    /** {@code tunnelId} or {@code roomId} depending on {@link #getJoinTargetSource()}. Null if not joinable. */
+    public String getJoinTargetId() {
+        return joinTargetId;
+    }
+
+    /**
+     * The instance this join target belongs to. Only present when it matches the caller's own
+     * running instance — the mod-api narrows this server-side before it ever reaches the mod.
+     */
+    public String getJoinTargetInstanceId() {
+        return joinTargetInstanceId;
+    }
+
+    /** True when this friend currently has a valid, connectable join target. */
+    public boolean isJoinable() {
+        return joinTargetSource != null && joinTargetId != null;
+    }
+
     public static Friend fromJson(String json) {
         return new Friend(
                 NerionHttp.extractString(json, "friendshipId"),
@@ -117,7 +164,10 @@ public final class Friend {
                 NerionHttp.extractNullableString(json, "currentInstanceName"),
                 NerionHttp.extractNullableLong(json, "lastActiveAt"),
                 NerionHttp.extractBoolean(json, "favorite"),
-                NerionHttp.extractRawObject(json, "socialLinks")
+                NerionHttp.extractRawObject(json, "socialLinks"),
+                NerionHttp.extractNullableString(json, "joinTargetSource"),
+                NerionHttp.extractNullableString(json, "joinTargetId"),
+                NerionHttp.extractNullableString(json, "joinTargetInstanceId")
         );
     }
 }

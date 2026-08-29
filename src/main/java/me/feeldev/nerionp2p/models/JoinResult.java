@@ -3,11 +3,13 @@ package me.feeldev.nerionp2p.models;
 import me.feeldev.nerionp2p.internal.NerionHttp;
 
 /**
- * Response from POST /v1/p2p/join.
+ * Response from POST /v1/p2p/join, or from {@link me.feeldev.nerionp2p.NerionP2PClient#joinFriend}
+ * when the friend's join target is a ROOM (mode {@code "DIRECT"}).
  * <p>
- * IMPORTANT: branch on {@link #getMode()} — if mode is "RELAY",
+ * IMPORTANT: branch on {@link #getMode()} — if mode is "RELAY" or "DIRECT",
  * {@link #getLocalBridgePort()} is 0 and you must connect to
- * {@link #getPublicHost()}:{@link #getPublicPort()} instead.
+ * {@link #getPublicHost()}:{@link #getPublicPort()} instead. {@link #getConnectAddress()} already
+ * handles this for you — prefer it over reading {@code localBridgePort} directly.
  */
 public final class JoinResult {
 
@@ -44,6 +46,15 @@ public final class JoinResult {
 
     public boolean isRelay() {
         return "RELAY".equals(mode);
+    }
+
+    /**
+     * True for a direct join to a friend's ROOM via {@link me.feeldev.nerionp2p.NerionP2PClient#joinFriend}.
+     * Like {@link #isRelay()}, {@link #getLocalBridgePort()} is 0 in this mode — use
+     * {@link #getConnectAddress()}/{@link #getConnectHost()}/{@link #getConnectPort()} instead.
+     */
+    public boolean isDirect() {
+        return "DIRECT".equals(mode);
     }
 
     /**
