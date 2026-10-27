@@ -35,7 +35,8 @@ public final class NerionP2PClient {
     private static final Logger LOG = Logger.getLogger(Constants.SDK_NAME);
 
     private final NerionP2PConfig config;
-    private NerionHttp http;
+    /** Set by the credential watcher once the launcher's credential file appears; null until then. */
+    private volatile NerionHttp http;
     private CredentialFileWatcher watcher;
 
     public NerionP2PClient(NerionP2PConfig config) {
@@ -78,17 +79,17 @@ public final class NerionP2PClient {
 
     /** {@code GET /v1/ping} — unauthenticated discovery, safe to call before credentials resolve if you already have a base URL. */
     public PingResponse ping() {
-        return PingResponse.fromJson(http.get("/v1/ping"));
+        return PingResponse.fromJson(http().get("/v1/ping"));
     }
 
     /** {@code GET /v1/net/free-port} — asks the launcher for a free local TCP port, scanning from the default floor (49152). Scope {@code net.port}. */
     public FreePortResponse getFreePort() {
-        return FreePortResponse.fromJson(http.get("/v1/net/free-port"));
+        return FreePortResponse.fromJson(http().get("/v1/net/free-port"));
     }
 
     /** {@code GET /v1/net/free-port?start=} — same, scanning from a custom floor. Scope {@code net.port}. */
     public FreePortResponse getFreePort(int start) {
-        return FreePortResponse.fromJson(http.get("/v1/net/free-port?start=" + start));
+        return FreePortResponse.fromJson(http().get("/v1/net/free-port?start=" + start));
     }
 
     // ======================== SESSION (doc §8.3, §8.4) ========================
@@ -105,7 +106,7 @@ public final class NerionP2PClient {
     /** Same as {@link #createSession()}, with an explicit visibility (e.g. {@code "PRIVATE"}). Scope {@code p2p.session}. */
     public SessionInfo createSession(String visibility) {
         JsonBuilder body = new JsonBuilder().put("visibility", visibility);
-        return SessionInfo.fromJson(http.post("/v1/p2p/session", body.build()));
+        return SessionInfo.fromJson(http().post("/v1/p2p/session", body.build()));
     }
 
     /**
@@ -114,7 +115,7 @@ public final class NerionP2PClient {
      * Scope {@code p2p.session}.
      */
     public SessionInfo getSession() {
-        return SessionInfo.fromJson(http.get("/v1/p2p/session"));
+        return SessionInfo.fromJson(http().get("/v1/p2p/session"));
     }
 
     /**
@@ -125,7 +126,7 @@ public final class NerionP2PClient {
      */
     public void setVisibility(String visibility) {
         JsonBuilder body = new JsonBuilder().put("visibility", visibility);
-        http.post("/v1/p2p/visibility", body.build());
+        http().post("/v1/p2p/visibility", body.build());
     }
 
     // ======================== DISCOVERY (doc §8.5, §8.6) ========================
@@ -135,7 +136,7 @@ public final class NerionP2PClient {
      * {@link #getSession()}. Scope {@code p2p.session}.
      */
     public InviteInfo getInvite() {
-        return InviteInfo.fromJson(http.get("/v1/p2p/invite"));
+        return InviteInfo.fromJson(http().get("/v1/p2p/invite"));
     }
 
     /**
@@ -144,7 +145,7 @@ public final class NerionP2PClient {
      */
     public ResolveResult resolveInvite(String inviteCode) {
         JsonBuilder body = new JsonBuilder().put("inviteCode", inviteCode);
-        return ResolveResult.fromJson(http.post("/v1/p2p/resolve", body.build()));
+        return ResolveResult.fromJson(http().post("/v1/p2p/resolve", body.build()));
     }
 
     // ======================== HOSTING (doc §8.7, §8.8, §8.9, §8.13) ========================
@@ -183,7 +184,7 @@ public final class NerionP2PClient {
             body.putRaw("extraPorts", extraPortsToJson(extraPorts));
         }
         body.put("tunnelId", tunnelId);
-        return HostResult.fromJson(http.post("/v1/p2p/host", body.build()));
+        return HostResult.fromJson(http().post("/v1/p2p/host", body.build()));
     }
 
     /** {@code POST /v1/p2p/relay} with just the required {@code localPort} — no extra ports. Scope {@code p2p.host}. */
@@ -205,12 +206,12 @@ public final class NerionP2PClient {
         if (extraPorts != null && !extraPorts.isEmpty()) {
             body.putRaw("extraPorts", extraPortsToJson(extraPorts));
         }
-        return RelayResult.fromJson(http.post("/v1/p2p/relay", body.build()));
+        return RelayResult.fromJson(http().post("/v1/p2p/relay", body.build()));
     }
 
     /** {@code GET /v1/p2p/ports} — current relay extra-port mappings. Scope {@code p2p.host}. */
     public PortsResponse getPorts() {
-        return PortsResponse.fromJson(http.get("/v1/p2p/ports"));
+        return PortsResponse.fromJson(http().get("/v1/p2p/ports"));
     }
 
     /**
@@ -218,7 +219,7 @@ public final class NerionP2PClient {
      * the relay sidecar. Idempotent — safe to call even if nothing was running. Scope {@code p2p.host}.
      */
     public void stop() {
-        http.postNoBody("/v1/p2p/stop");
+        http().postNoBody("/v1/p2p/stop");
     }
 
     // ======================== JOINING (doc §8.10, §8.11) ========================
@@ -233,7 +234,7 @@ public final class NerionP2PClient {
      */
     public JoinResult joinByInviteCode(String inviteCode) {
         JsonBuilder body = new JsonBuilder().put("inviteCode", inviteCode);
-        return JoinResult.fromJson(http.post("/v1/p2p/join", body.build()));
+        return JoinResult.fromJson(http().post("/v1/p2p/join", body.build()));
     }
 
     /** {@code POST /v1/p2p/join} by tunnel ID, without a share code. Scope {@code p2p.join}. */
@@ -244,7 +245,7 @@ public final class NerionP2PClient {
     /** {@code POST /v1/p2p/join} by tunnel ID with an optional share code. Scope {@code p2p.join}. */
     public JoinResult joinByTunnelId(String tunnelId, String shareCode) {
         JsonBuilder body = new JsonBuilder().put("tunnelId", tunnelId).put("shareCode", shareCode);
-        return JoinResult.fromJson(http.post("/v1/p2p/join", body.build()));
+        return JoinResult.fromJson(http().post("/v1/p2p/join", body.build()));
     }
 
     /**
@@ -253,7 +254,7 @@ public final class NerionP2PClient {
      * Scope {@code p2p.join}.
      */
     public void stopJoining() {
-        http.postNoBody("/v1/p2p/join/stop");
+        http().postNoBody("/v1/p2p/join/stop");
     }
 
     // ======================== STATUS (doc §8.12) ========================
@@ -263,7 +264,19 @@ public final class NerionP2PClient {
      * require polling this every ~2s to find out when the connection actually comes up. Scope {@code p2p.status}.
      */
     public StatusResponse status() {
-        return StatusResponse.fromJson(http.get("/v1/p2p/status"));
+        return StatusResponse.fromJson(http().get("/v1/p2p/status"));
+    }
+
+    /**
+     * {@code POST /v1/p2p/peer-mode} — how a player the host's game server sees connecting from
+     * {@code 127.0.0.1:port} arrived: {@link ConnectionMode#P2P} over the launcher's bridge,
+     * otherwise {@link ConnectionMode#RELAY} (the relay client connects from loopback too). Only
+     * meaningful for loopback connections; a player from another address is on the LAN. Scope
+     * {@code p2p.status}. Needs a launcher with the route — an older one answers 404.
+     */
+    public ConnectionMode peerMode(int port) {
+        String body = new JsonBuilder().put("port", port).build();
+        return ConnectionMode.fromWire(NerionHttp.extractNullableString(http().post("/v1/p2p/peer-mode", body), "mode"));
     }
 
     /**
@@ -302,7 +315,7 @@ public final class NerionP2PClient {
      * off the token's identity alone, like every other scoped route. Scope {@code social.friends.read}.
      */
     public FriendsResponse getFriends() {
-        return FriendsResponse.fromJson(http.get("/v1/social/friends"));
+        return FriendsResponse.fromJson(http().get("/v1/social/friends"));
     }
 
     /**
@@ -327,7 +340,7 @@ public final class NerionP2PClient {
             JsonBuilder body = new JsonBuilder()
                     .put("source", "ROOM")
                     .put("targetId", friend.getJoinTargetId());
-            return JoinResult.fromJson(http.post("/v1/social/join", body.build()));
+            return JoinResult.fromJson(http().post("/v1/social/join", body.build()));
         }
         throw new IllegalArgumentException(
                 "friend has no join target — check Friend#isJoinable() before calling joinFriend()");
@@ -349,7 +362,7 @@ public final class NerionP2PClient {
      * @param friendPlayerAccountId {@link Friend#getPlayerAccountId()} of the friend to invite.
      */
     public void inviteFriendToSession(String friendPlayerAccountId) {
-        http.postNoBody("/v1/social/invite/" + encodePathSegment(friendPlayerAccountId));
+        http().postNoBody("/v1/social/invite/" + encodePathSegment(friendPlayerAccountId));
     }
 
     // ======================== SOCIAL — FRIEND REQUESTS (doc §8.16-§8.20) ========================
@@ -359,7 +372,7 @@ public final class NerionP2PClient {
      * {@code social.friends.read}.
      */
     public FriendRequestsResponse getFriendRequests() {
-        return FriendRequestsResponse.fromJson(http.get("/v1/social/requests"));
+        return FriendRequestsResponse.fromJson(http().get("/v1/social/requests"));
     }
 
     /**
@@ -368,7 +381,7 @@ public final class NerionP2PClient {
      * response shape. Scope {@code social.friends.read}.
      */
     public FriendRequestsResponse getSentFriendRequests() {
-        return FriendRequestsResponse.fromJson(http.get("/v1/social/requests/sent"));
+        return FriendRequestsResponse.fromJson(http().get("/v1/social/requests/sent"));
     }
 
     /**
@@ -382,7 +395,7 @@ public final class NerionP2PClient {
      */
     public void sendFriendRequest(String playerAccountId) {
         JsonBuilder body = new JsonBuilder().put("playerAccountId", playerAccountId);
-        http.post("/v1/social/requests", body.build());
+        http().post("/v1/social/requests", body.build());
     }
 
     /**
@@ -391,7 +404,7 @@ public final class NerionP2PClient {
      * {@code social.friends.write}.
      */
     public void acceptFriendRequest(String requestId) {
-        http.postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/accept");
+        http().postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/accept");
     }
 
     /**
@@ -400,7 +413,7 @@ public final class NerionP2PClient {
      * {@code social.friends.write}.
      */
     public void rejectFriendRequest(String requestId) {
-        http.postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/reject");
+        http().postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/reject");
     }
 
     /**
@@ -409,7 +422,7 @@ public final class NerionP2PClient {
      * comes from {@link #getSentFriendRequests()}. Scope {@code social.friends.write}.
      */
     public void cancelFriendRequest(String requestId) {
-        http.postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/cancel");
+        http().postNoBody("/v1/social/requests/" + encodePathSegment(requestId) + "/cancel");
     }
 
     // ======================== SOCIAL — FRIENDS MANAGEMENT (doc §8.21, §8.22) ========================
@@ -420,7 +433,7 @@ public final class NerionP2PClient {
      * {@code social.friends.write}.
      */
     public void removeFriend(String friendPlayerAccountId) {
-        http.postNoBody("/v1/social/friends/" + encodePathSegment(friendPlayerAccountId) + "/remove");
+        http().postNoBody("/v1/social/friends/" + encodePathSegment(friendPlayerAccountId) + "/remove");
     }
 
     /**
@@ -431,10 +444,22 @@ public final class NerionP2PClient {
      * don't mix the two up. Scope {@code social.friends.write}.
      */
     public void toggleFavorite(String friendshipId) {
-        http.postNoBody("/v1/social/friends/" + encodePathSegment(friendshipId) + "/favorite");
+        http().postNoBody("/v1/social/friends/" + encodePathSegment(friendshipId) + "/favorite");
     }
 
     // ======================== PRIVATE ========================
+
+    /**
+     * The launcher API client, or a clear failure before the credential file showed up — every call
+     * used to die with a bare NullPointerException that callers reported as a generic failure.
+     */
+    private NerionHttp http() {
+        NerionHttp current = http;
+        if (current == null) {
+            throw new P2PNetworkException("Not connected to the Nerion launcher yet (no launcher API credentials).");
+        }
+        return current;
+    }
 
     private void onCredentials(String url, String tok) {
         this.http = new NerionHttp(url, tok);
