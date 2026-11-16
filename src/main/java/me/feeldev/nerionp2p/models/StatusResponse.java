@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 /**
  * Response from {@code GET /v1/p2p/status} (doc §8.12) — poll-safe, no side effects, safe to call
@@ -69,13 +70,14 @@ public final class StatusResponse {
     }
 
     public static StatusResponse fromJson(String json) {
-        ConnectionState state = ConnectionState.fromWire(NerionHttp.extractNullableString(json, "state"));
-        ConnectionRole role = ConnectionRole.fromWire(NerionHttp.extractNullableString(json, "role"));
-        ConnectionMode mode = ConnectionMode.fromWire(NerionHttp.extractNullableString(json, "mode"));
-        String tunnelId = NerionHttp.extractNullableString(json, "tunnelId");
-        Integer localBridgePort = NerionHttp.extractNullableInt(json, "localBridgePort");
-        Integer lanPort = NerionHttp.extractNullableInt(json, "lanPort");
-        RelayStatus relayStatus = RelayStatus.fromWire(NerionHttp.extractNullableString(json, "relayStatus"));
+        JsonObject o = Json.parseObject(json);
+        ConnectionState state = ConnectionState.fromWire(o.getOptionalString("state"));
+        ConnectionRole role = ConnectionRole.fromWire(o.getOptionalString("role"));
+        ConnectionMode mode = ConnectionMode.fromWire(o.getOptionalString("mode"));
+        String tunnelId = o.getOptionalString("tunnelId");
+        Integer localBridgePort = o.getOptionalInt("localBridgePort");
+        Integer lanPort = o.getOptionalInt("lanPort");
+        RelayStatus relayStatus = RelayStatus.fromWire(o.getOptionalString("relayStatus"));
         return new StatusResponse(state, role, mode, tunnelId, localBridgePort, lanPort, relayStatus);
     }
 }

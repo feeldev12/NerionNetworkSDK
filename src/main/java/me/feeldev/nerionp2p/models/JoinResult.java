@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 /**
  * Response from POST /v1/p2p/join, or from {@link me.feeldev.nerionp2p.NerionP2PClient#joinFriend}
@@ -78,10 +79,11 @@ public final class JoinResult {
     }
 
     public static JoinResult fromJson(String json) {
-        String mode = NerionHttp.extractString(json, "mode");
-        int localBridgePort = NerionHttp.extractInt(json, "localBridgePort");
-        String publicHost = NerionHttp.extractString(json, "publicHost");
-        int publicPort = NerionHttp.extractInt(json, "publicPort");
+        JsonObject o = Json.parseObject(json);
+        String mode = o.getString("mode");
+        int localBridgePort = o.getInt("localBridgePort");
+        String publicHost = o.getString("publicHost");
+        int publicPort = o.getInt("publicPort");
         return new JoinResult(mode, localBridgePort, publicHost, publicPort);
     }
 }

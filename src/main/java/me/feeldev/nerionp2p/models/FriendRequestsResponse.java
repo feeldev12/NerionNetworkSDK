@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +24,9 @@ public final class FriendRequestsResponse {
     }
 
     public static FriendRequestsResponse fromJson(String json) {
-        List<String> objs = NerionHttp.extractObjectArray(json, "requests");
-        List<FriendRequest> requests = new ArrayList<>(objs.size());
-        for (String obj : objs) {
-            requests.add(FriendRequest.fromJson(obj));
+        List<FriendRequest> requests = new ArrayList<>();
+        for (JsonObject request : Json.parseObject(json).getObjectList("requests")) {
+            requests.add(FriendRequest.fromJson(request));
         }
         return new FriendRequestsResponse(requests);
     }

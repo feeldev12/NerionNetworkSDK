@@ -1,5 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
+import me.feeldev.nerionp2p.internal.JsonBuilder;
+
 /**
  * An additional TCP/UDP port to tunnel alongside the main port, e.g. a Dynmap web port. Used in
  * {@code POST /v1/p2p/host} and {@code POST /v1/p2p/relay} request bodies (doc §8.7, §8.8).
@@ -23,6 +25,6 @@ public final class ExtraPort {
     }
 
     public String toJson() {
-        return "{\"port\":" + port + ",\"protocol\":\"" + protocol.wireValue() + "\"}";
+        return new JsonBuilder().put("port", port).put("protocol", protocol.wireValue()).build();
     }
 }

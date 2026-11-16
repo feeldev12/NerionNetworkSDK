@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 /**
  * One entry from {@code GET /v1/social/friends} (doc §8.14).
@@ -151,23 +152,27 @@ public final class Friend {
     }
 
     public static Friend fromJson(String json) {
+        return fromJson(Json.parseObject(json));
+    }
+
+    static Friend fromJson(JsonObject o) {
         return new Friend(
-                NerionHttp.extractString(json, "friendshipId"),
-                NerionHttp.extractString(json, "playerAccountId"),
-                NerionHttp.extractString(json, "username"),
-                NerionHttp.extractString(json, "playerName"),
-                NerionHttp.extractString(json, "mcUsername"),
-                NerionHttp.extractNullableString(json, "avatarUrl"),
-                NerionHttp.extractNullableString(json, "primarySkinUrl"),
-                NerionHttp.extractBoolean(json, "online"),
-                NerionHttp.extractNullableString(json, "currentInstanceId"),
-                NerionHttp.extractNullableString(json, "currentInstanceName"),
-                NerionHttp.extractNullableLong(json, "lastActiveAt"),
-                NerionHttp.extractBoolean(json, "favorite"),
-                NerionHttp.extractRawObject(json, "socialLinks"),
-                NerionHttp.extractNullableString(json, "joinTargetSource"),
-                NerionHttp.extractNullableString(json, "joinTargetId"),
-                NerionHttp.extractNullableString(json, "joinTargetInstanceId")
+                o.getString("friendshipId"),
+                o.getString("playerAccountId"),
+                o.getString("username"),
+                o.getString("playerName"),
+                o.getString("mcUsername"),
+                o.getOptionalString("avatarUrl"),
+                o.getOptionalString("primarySkinUrl"),
+                o.getBoolean("online"),
+                o.getOptionalString("currentInstanceId"),
+                o.getOptionalString("currentInstanceName"),
+                o.getOptionalLong("lastActiveAt"),
+                o.getBoolean("favorite"),
+                o.getRawObject("socialLinks"),
+                o.getOptionalString("joinTargetSource"),
+                o.getOptionalString("joinTargetId"),
+                o.getOptionalString("joinTargetInstanceId")
         );
     }
 }

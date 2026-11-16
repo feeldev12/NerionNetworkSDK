@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,12 +20,9 @@ public final class PortsResponse {
     }
 
     public static PortsResponse fromJson(String json) {
-        List<String> objs = NerionHttp.extractObjectArray(json, "ports");
-        List<PortMapping> mappings = new ArrayList<>(objs.size());
-        for (String obj : objs) {
-            int localPort = NerionHttp.extractInt(obj, "localPort");
-            int publicPort = NerionHttp.extractInt(obj, "publicPort");
-            mappings.add(new PortMapping(localPort, publicPort));
+        List<PortMapping> mappings = new ArrayList<>();
+        for (JsonObject port : Json.parseObject(json).getObjectList("ports")) {
+            mappings.add(new PortMapping(port.getInt("localPort"), port.getInt("publicPort")));
         }
         return new PortsResponse(mappings);
     }

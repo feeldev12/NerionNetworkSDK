@@ -1,15 +1,31 @@
 # NerionP2PSDK
 
-Standalone Java client for the Nerion Launcher's local P2P mod API (`/v1/*`). Zero Minecraft
-dependencies — safe to use from a fabric/forge/neoforge mod, a bukkit/paper plugin, or a plain
-Java tool. Full contract: `docs/mod-api/api-reference.md` in the app-launcher repo.
+Java client for the Nerion Launcher's local mod API (`/v1/*`): host a world over P2P, join with an
+invite code, invite friends and manage friend requests from your own mod or plugin.
+
+- No dependencies and no Minecraft classes: works in Fabric, Forge and NeoForge mods, Bukkit/Paper
+  plugins and plain Java tools. Java 17+.
+- Only works while the game was started by the Nerion Launcher: it opens the local API and writes the
+  credentials file (`config/nerionsdk/launcher-api-credential.txt`) the client waits for.
+- Full contract of the API: [`docs/api-reference.md`](docs/api-reference.md).
 
 ## Install
 
 ```gradle
-repositories { mavenLocal() }
-dependencies { implementation "me.feeldev:nerion-p2p-sdk:1.3.0" }
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    // Inside a mod that depends on NerionP2P, the SDK is already on the classpath at runtime:
+    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.4.4'
+    // Anywhere else (a plugin, a tool), bundle it instead:
+    // implementation 'com.github.feeldev12:NerionP2PSDK:1.4.4'
+}
 ```
+
+Program against `NerionP2PClient` and the classes in `me.feeldev.nerionp2p.models`. Everything in
+`me.feeldev.nerionp2p.internal` (except `P2PApiException`) is internal and may change.
 
 ## Connect
 

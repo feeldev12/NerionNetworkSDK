@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 /**
  * Response from GET /v1/p2p/invite.
@@ -28,11 +29,12 @@ public final class InviteInfo {
     public String getExpiresAt() { return expiresAt; }
 
     public static InviteInfo fromJson(String json) {
-        String url = NerionHttp.extractString(json, "url");
-        String token = NerionHttp.extractString(json, "token");
-        int maxUses = NerionHttp.extractInt(json, "maxUses");
-        int usesCount = NerionHttp.extractInt(json, "usesCount");
-        String expiresAt = NerionHttp.extractString(json, "expiresAt");
+        JsonObject o = Json.parseObject(json);
+        String url = o.getString("url");
+        String token = o.getString("token");
+        int maxUses = o.getInt("maxUses");
+        int usesCount = o.getInt("usesCount");
+        String expiresAt = o.getString("expiresAt");
         return new InviteInfo(url, token, maxUses, usesCount, expiresAt);
     }
 }

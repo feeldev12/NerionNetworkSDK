@@ -15,20 +15,20 @@ public final class JsonBuilder {
 
     public JsonBuilder put(String key, String value) {
         if (value != null) {
-            fields.add("\"" + key + "\":\"" + NerionHttp.escapeJson(value) + "\"");
+            fields.add(Json.quote(key) + ":" + Json.quote(value));
         }
         return this;
     }
 
     public JsonBuilder put(String key, int value) {
-        fields.add("\"" + key + "\":" + value);
+        fields.add(Json.quote(key) + ":" + value);
         return this;
     }
 
     /** Embeds a pre-built JSON fragment (object/array) verbatim under this key. Omitted when null. */
     public JsonBuilder putRaw(String key, String rawJson) {
         if (rawJson != null) {
-            fields.add("\"" + key + "\":" + rawJson);
+            fields.add(Json.quote(key) + ":" + rawJson);
         }
         return this;
     }

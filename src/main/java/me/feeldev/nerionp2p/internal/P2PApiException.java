@@ -15,8 +15,9 @@ public final class P2PApiException extends RuntimeException {
     public P2PApiException(int httpStatus, String responseBody) {
         super("HTTP " + httpStatus + ": " + responseBody);
         this.httpStatus = httpStatus;
-        this.errorCode = ErrorCode.fromWire(extractField(responseBody, "code"));
-        this.apiMessage = extractField(responseBody, "message");
+        JsonObject error = errorObject(responseBody);
+        this.errorCode = ErrorCode.fromWire(field(error, "code"));
+        this.apiMessage = field(error, "message");
     }
 
     public int getHttpStatus() {
@@ -83,10 +84,19 @@ public final class P2PApiException extends RuntimeException {
         return errorCode == ErrorCode.NOT_PLAYING_INSTANCE;
     }
 
-    private static String extractField(String json, String key) {
+    /** The {@code "error"} object of the envelope; null when the body isn't one (e.g. a proxy's HTML page). */
+    private static JsonObject errorObject(String body) {
         try {
-            return NerionHttp.extractString(json, key);
-        } catch (Exception e) {
+            return Json.parseObject(body).getOptionalObject("error");
+        } catch (JsonException e) {
+            return null;
+        }
+    }
+
+    private static String field(JsonObject error, String key) {
+        try {
+            return error == null ? null : error.getOptionalString(key);
+        } catch (JsonException e) {
             return null;
         }
     }

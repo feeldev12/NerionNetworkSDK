@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 /**
  * Response from POST /v1/p2p/host.
@@ -28,11 +29,12 @@ public final class HostResult {
     public String getState() { return state; }
 
     public static HostResult fromJson(String json) {
-        String tunnelId = NerionHttp.extractString(json, "tunnelId");
-        String publicHost = NerionHttp.extractString(json, "publicHost");
-        int publicPort = NerionHttp.extractInt(json, "publicPort");
-        int relayPort = NerionHttp.extractInt(json, "relayPort");
-        String state = NerionHttp.extractString(json, "state");
+        JsonObject o = Json.parseObject(json);
+        String tunnelId = o.getString("tunnelId");
+        String publicHost = o.getString("publicHost");
+        int publicPort = o.getInt("publicPort");
+        int relayPort = o.getInt("relayPort");
+        String state = o.getString("state");
         return new HostResult(tunnelId, publicHost, publicPort, relayPort, state);
     }
 }
