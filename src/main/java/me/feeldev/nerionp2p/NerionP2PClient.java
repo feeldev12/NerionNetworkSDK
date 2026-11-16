@@ -60,13 +60,21 @@ public final class NerionP2PClient {
     private volatile NerionHttp http;
     private CredentialFileWatcher watcher;
 
+    /** A client with the default {@link NerionP2PConfig}: it finds the launcher's credentials by itself. */
+    public NerionP2PClient() {
+        this(NerionP2PConfig.builder().build());
+    }
+
     public NerionP2PClient(NerionP2PConfig config) {
         this.config = config;
     }
 
     // ======================== CONNECTION ========================
 
-    /** Connect using the config's credential file. Non-blocking — polls in the background until found. */
+    /**
+     * Connect using the config's credential file (by default the one the launcher writes for this
+     * game, see {@link NerionP2PConfig#defaultCredentialFile}). Non-blocking — polls in the background until found.
+     */
     public void connect() {
         connect(config.getCredentialFile());
     }

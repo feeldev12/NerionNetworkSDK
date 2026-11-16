@@ -5,8 +5,8 @@ invite code, invite friends and manage friend requests from your own mod or plug
 
 - No dependencies and no Minecraft classes: works in Fabric, Forge and NeoForge mods, Bukkit/Paper
   plugins and plain Java tools. Java 17+.
-- Only works while the game was started by the Nerion Launcher: it opens the local API and writes the
-  credentials file (`config/nerionsdk/launcher-api-credential.txt`) the client waits for.
+- Only works while the game was started by the Nerion Launcher: it opens the local API and leaves
+  its address and a key in the game's folder, where the client finds them by itself.
 - Full contract of the API: [`docs/api-reference.md`](docs/api-reference.md).
 
 ## Install
@@ -18,9 +18,9 @@ repositories {
 
 dependencies {
     // Inside a mod that depends on NerionP2P, the SDK is already on the classpath at runtime:
-    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.4.4'
+    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.4.5'
     // Anywhere else (a plugin, a tool), bundle it instead:
-    // implementation 'com.github.feeldev12:NerionP2PSDK:1.4.4'
+    // implementation 'com.github.feeldev12:NerionP2PSDK:1.4.5'
 }
 ```
 
@@ -30,14 +30,21 @@ Program against `NerionP2PClient` and the classes in `me.feeldev.nerionp2p.model
 ## Connect
 
 ```java
-NerionP2PConfig config = NerionP2PConfig.builder()
-    .credentialFile(new File("config/nerionsdk/launcher-api-credential.txt"))
-    .onConnected(() -> System.out.println("Connected to launcher API"))
-    .build();
-
-NerionP2PClient client = new NerionP2PClient(config);
-client.connect(); // non-blocking, polls until the launcher writes the credential file
+NerionP2PClient client = new NerionP2PClient();
+client.connect(); // non-blocking: waits in the background until the launcher is ready
 ```
+
+To run code once it's connected, or to tune the client, pass a config:
+
+```java
+NerionP2PClient client = new NerionP2PClient(NerionP2PConfig.builder()
+    .onConnected(() -> System.out.println("Connected to the Nerion launcher"))
+    .build());
+```
+
+The launcher's credentials live in `config/nerionsdk/` for mods and in `plugins/NerionSDK/` for
+Bukkit/Paper servers, and the client picks the right one from the working directory. Only if your
+code doesn't run from the game's own folder, point it there with `.credentialFile(...)`.
 
 ## Host a session (open to LAN)
 
