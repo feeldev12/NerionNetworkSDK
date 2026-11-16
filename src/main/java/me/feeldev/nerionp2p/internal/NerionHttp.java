@@ -17,6 +17,10 @@ public final class NerionHttp {
         this.token = token;
         this.client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
+                // The launcher's local mod-api server (tiny_http, Rust) only speaks HTTP/1.1 — the
+                // JDK client's default h2c upgrade attempt against it fails intermittently instead of
+                // cleanly falling back, since tiny_http never replies to the Upgrade handshake at all.
+                .version(HttpClient.Version.HTTP_1_1)
                 .build();
     }
 
