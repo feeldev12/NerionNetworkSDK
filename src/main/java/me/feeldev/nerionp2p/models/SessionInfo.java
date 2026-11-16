@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 /**
  * Response from POST /v1/p2p/session (create) and GET /v1/p2p/session (get info).
@@ -35,12 +36,13 @@ public final class SessionInfo {
     public String getVisibility() { return visibility; }
 
     public static SessionInfo fromJson(String json) {
-        String tunnelId = NerionHttp.extractString(json, "tunnelId");
-        String p2pSessionId = NerionHttp.extractNullableString(json, "p2pSessionId");
-        String publicHost = NerionHttp.extractString(json, "publicHost");
-        int publicPort = NerionHttp.extractInt(json, "publicPort");
-        Integer relayPort = NerionHttp.extractNullableInt(json, "relayPort");
-        String visibility = NerionHttp.extractNullableString(json, "visibility");
+        JsonObject o = Json.parseObject(json);
+        String tunnelId = o.getString("tunnelId");
+        String p2pSessionId = o.getOptionalString("p2pSessionId");
+        String publicHost = o.getString("publicHost");
+        int publicPort = o.getInt("publicPort");
+        Integer relayPort = o.getOptionalInt("relayPort");
+        String visibility = o.getOptionalString("visibility");
         return new SessionInfo(tunnelId, p2pSessionId, publicHost, publicPort, relayPort, visibility);
     }
 }

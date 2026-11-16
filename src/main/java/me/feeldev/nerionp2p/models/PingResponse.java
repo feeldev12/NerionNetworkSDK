@@ -1,5 +1,8 @@
 package me.feeldev.nerionp2p.models;
 
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
+
 /**
  * Response from GET /v1/ping.
  */
@@ -22,14 +25,7 @@ public final class PingResponse {
     }
 
     public static PingResponse fromJson(String json) {
-        int apiVersion = me.feeldev.nerionp2p.internal.NerionHttp.extractInt(json, "apiVersion");
-        // Simple array extraction for capabilities
-        String capStr = json.substring(json.indexOf("\"capabilities\""));
-        int bracketStart = capStr.indexOf('[');
-        int bracketEnd = capStr.indexOf(']');
-        String inner = capStr.substring(bracketStart + 1, bracketEnd);
-        String[] capabilities = inner.isEmpty() ? new String[0] :
-                inner.replace("\"", "").split(",");
-        return new PingResponse(apiVersion, capabilities);
+        JsonObject o = Json.parseObject(json);
+        return new PingResponse(o.getInt("apiVersion"), o.getStringList("capabilities").toArray(new String[0]));
     }
 }

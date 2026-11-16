@@ -1,13 +1,34 @@
 package me.feeldev.nerionp2p;
 
 import me.feeldev.nerionp2p.internal.CredentialFileWatcher;
+import me.feeldev.nerionp2p.internal.Json;
 import me.feeldev.nerionp2p.internal.JsonBuilder;
 import me.feeldev.nerionp2p.internal.NerionHttp;
 import me.feeldev.nerionp2p.internal.P2PNetworkException;
-import me.feeldev.nerionp2p.models.*;
+import me.feeldev.nerionp2p.models.ConnectionMode;
+import me.feeldev.nerionp2p.models.ConnectionState;
+import me.feeldev.nerionp2p.models.ExtraPort;
+import me.feeldev.nerionp2p.models.FreePortResponse;
+import me.feeldev.nerionp2p.models.Friend;
+import me.feeldev.nerionp2p.models.FriendRequest;
+import me.feeldev.nerionp2p.models.FriendRequestsResponse;
+import me.feeldev.nerionp2p.models.FriendsResponse;
+import me.feeldev.nerionp2p.models.HostMode;
+import me.feeldev.nerionp2p.models.HostResult;
+import me.feeldev.nerionp2p.models.InviteInfo;
+import me.feeldev.nerionp2p.models.JoinResult;
+import me.feeldev.nerionp2p.models.PingResponse;
+import me.feeldev.nerionp2p.models.PortsResponse;
+import me.feeldev.nerionp2p.models.RelayResult;
+import me.feeldev.nerionp2p.models.ResolveResult;
+import me.feeldev.nerionp2p.models.SessionInfo;
+import me.feeldev.nerionp2p.models.StatusResponse;
 
 import java.io.File;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +53,7 @@ import java.util.logging.Logger;
  */
 public final class NerionP2PClient {
 
-    private static final Logger LOG = Logger.getLogger(Constants.SDK_NAME);
+    private static final Logger LOG = Logger.getLogger("NerionP2PSDK");
 
     private final NerionP2PConfig config;
     /** Set by the credential watcher once the launcher's credential file appears; null until then. */
@@ -276,7 +297,8 @@ public final class NerionP2PClient {
      */
     public ConnectionMode peerMode(int port) {
         String body = new JsonBuilder().put("port", port).build();
-        return ConnectionMode.fromWire(NerionHttp.extractNullableString(http().post("/v1/p2p/peer-mode", body), "mode"));
+        String response = http().post("/v1/p2p/peer-mode", body);
+        return ConnectionMode.fromWire(Json.parseObject(response).getOptionalString("mode"));
     }
 
     /**
@@ -470,11 +492,11 @@ public final class NerionP2PClient {
     }
 
     private static String encodePathSegment(String value) {
-        return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     private static String extraPortsToJson(List<ExtraPort> extraPorts) {
-        java.util.List<String> fragments = new java.util.ArrayList<>(extraPorts.size());
+        List<String> fragments = new ArrayList<>(extraPorts.size());
         for (ExtraPort p : extraPorts) {
             fragments.add(p.toJson());
         }

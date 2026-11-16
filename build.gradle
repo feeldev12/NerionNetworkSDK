@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'me.feeldev'
-version = '1.4.3'
+version = '1.4.4'
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -27,10 +27,8 @@ repositories {
 }
 
 dependencies {
-    compileOnly "org.slf4j:slf4j-api:2.0.7"
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter"
-    testRuntimeOnly "org.slf4j:slf4j-simple:2.0.7"
 }
 
 test {

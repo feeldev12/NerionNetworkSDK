@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 /**
  * One entry from {@code GET /v1/social/requests} or {@code GET /v1/social/requests/sent}
@@ -65,13 +66,17 @@ public final class FriendRequest {
     }
 
     public static FriendRequest fromJson(String json) {
+        return fromJson(Json.parseObject(json));
+    }
+
+    static FriendRequest fromJson(JsonObject o) {
         return new FriendRequest(
-                NerionHttp.extractString(json, "requestId"),
-                NerionHttp.extractString(json, "fromPlayerAccountId"),
-                NerionHttp.extractString(json, "fromPlayerName"),
-                NerionHttp.extractNullableString(json, "fromAvatarUrl"),
-                NerionHttp.extractNullableString(json, "fromPrimarySkinUrl"),
-                NerionHttp.extractNullableLong(json, "sentAt")
+                o.getString("requestId"),
+                o.getString("fromPlayerAccountId"),
+                o.getString("fromPlayerName"),
+                o.getOptionalString("fromAvatarUrl"),
+                o.getOptionalString("fromPrimarySkinUrl"),
+                o.getOptionalLong("sentAt")
         );
     }
 }

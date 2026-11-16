@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,15 +35,11 @@ public final class RelayResult {
     }
 
     public static RelayResult fromJson(String json) {
-        String publicHost = NerionHttp.extractString(json, "publicHost");
-        int publicPort = NerionHttp.extractInt(json, "publicPort");
-        List<String> objs = NerionHttp.extractObjectArray(json, "extraPorts");
-        List<RelayExtraPort> extraPorts = new ArrayList<>(objs.size());
-        for (String obj : objs) {
-            int localPort = NerionHttp.extractInt(obj, "localPort");
-            String protocol = NerionHttp.extractString(obj, "protocol");
-            extraPorts.add(new RelayExtraPort(localPort, protocol));
+        JsonObject o = Json.parseObject(json);
+        List<RelayExtraPort> extraPorts = new ArrayList<>();
+        for (JsonObject port : o.getObjectList("extraPorts")) {
+            extraPorts.add(new RelayExtraPort(port.getInt("localPort"), port.getString("protocol")));
         }
-        return new RelayResult(publicHost, publicPort, extraPorts);
+        return new RelayResult(o.getString("publicHost"), o.getInt("publicPort"), extraPorts);
     }
 }

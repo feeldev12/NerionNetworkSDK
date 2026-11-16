@@ -1,6 +1,7 @@
 package me.feeldev.nerionp2p.models;
 
-import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.Json;
+import me.feeldev.nerionp2p.internal.JsonObject;
 
 /**
  * Response from POST /v1/p2p/resolve.
@@ -32,12 +33,13 @@ public final class ResolveResult {
     public String getOwnerAvatarUrl() { return ownerAvatarUrl; }
 
     public static ResolveResult fromJson(String json) {
-        String tunnelId = NerionHttp.extractString(json, "tunnelId");
-        String type = NerionHttp.extractString(json, "type");
-        String instanceId = NerionHttp.extractNullableString(json, "instanceId");
-        String instanceName = NerionHttp.extractNullableString(json, "instanceName");
-        String ownerDisplayName = NerionHttp.extractString(json, "ownerDisplayName");
-        String ownerAvatarUrl = NerionHttp.extractNullableString(json, "ownerAvatarUrl");
+        JsonObject o = Json.parseObject(json);
+        String tunnelId = o.getString("tunnelId");
+        String type = o.getString("type");
+        String instanceId = o.getOptionalString("instanceId");
+        String instanceName = o.getOptionalString("instanceName");
+        String ownerDisplayName = o.getString("ownerDisplayName");
+        String ownerAvatarUrl = o.getOptionalString("ownerAvatarUrl");
         return new ResolveResult(tunnelId, type, instanceId, instanceName, ownerDisplayName, ownerAvatarUrl);
     }
 }
