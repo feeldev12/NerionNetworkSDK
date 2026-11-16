@@ -3,16 +3,18 @@ package me.feeldev.nerionp2p;
 import java.io.File;
 
 /**
- * Configuration for {@link NerionP2PClient}. Use the builder.
+ * Configuration for {@link NerionP2PClient}. Everything is optional: {@code new NerionP2PClient()}
+ * uses the defaults.
  *
  * <pre>
  * NerionP2PConfig config = NerionP2PConfig.builder()
- *     .credentialFile(new File("launcher-api-credential.txt"))
- *     .onCredentials((url, token) -&gt; { ... })
+ *     .onConnected(() -&gt; log("Connected to the Nerion launcher"))
  *     .build();
  * </pre>
  */
 public final class NerionP2PConfig {
+
+    private static final String CREDENTIAL_FILE_NAME = "launcher-api-credential.txt";
 
     private final File credentialFile;
     private final long pollIntervalMs;
@@ -20,7 +22,7 @@ public final class NerionP2PConfig {
     private final Runnable onDisconnected;
 
     private NerionP2PConfig(Builder b) {
-        this.credentialFile = b.credentialFile;
+        this.credentialFile = b.credentialFile != null ? b.credentialFile : defaultCredentialFile(new File("."));
         this.pollIntervalMs = b.pollIntervalMs;
         this.onConnected = b.onConnected;
         this.onDisconnected = b.onDisconnected;
@@ -35,15 +37,30 @@ public final class NerionP2PConfig {
         return new Builder();
     }
 
+    /**
+     * Where the launcher writes its credentials for a game or server running in {@code gameDir}:
+     * {@code plugins/NerionSDK/} when that folder has a {@code plugins/} folder (Bukkit/Paper),
+     * {@code config/nerionsdk/} otherwise (Fabric, Forge, NeoForge). The launcher picks it the same way.
+     */
+    public static File defaultCredentialFile(File gameDir) {
+        String folder = new File(gameDir, "plugins").isDirectory() ? "plugins/NerionSDK" : "config/nerionsdk";
+        return new File(new File(gameDir, folder), CREDENTIAL_FILE_NAME);
+    }
+
     public static final class Builder {
 
-        private File credentialFile = new File("launcher-api-credential.txt");
+        private File credentialFile;
         private long pollIntervalMs = 5_000;
         private Runnable onConnected;
         private Runnable onDisconnected;
 
         private Builder() {}
 
+        /**
+         * Only needed when your code doesn't run from the game's own folder. By default it's
+         * {@link #defaultCredentialFile(File)} of the working directory, where Minecraft and
+         * Bukkit/Paper servers run.
+         */
         public Builder credentialFile(File file) {
             this.credentialFile = file;
             return this;
@@ -65,9 +82,6 @@ public final class NerionP2PConfig {
         }
 
         public NerionP2PConfig build() {
-            if (credentialFile == null) {
-                throw new IllegalArgumentException("credentialFile is required");
-            }
             return new NerionP2PConfig(this);
         }
     }
