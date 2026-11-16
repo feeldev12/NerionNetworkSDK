@@ -17,12 +17,13 @@ repositories {
 }
 
 dependencies {
-    // Inside a mod that depends on NerionP2P, the SDK is already on the classpath at runtime:
-    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.4.5'
-    // Anywhere else (a plugin, a tool), bundle it instead:
-    // implementation 'com.github.feeldev12:NerionP2PSDK:1.4.5'
+    implementation 'com.github.feeldev12:NerionP2PSDK:1.4.5'
 }
 ```
+
+In a mod, also ship it inside your jar as a nested jar: `include` on Fabric (Loom), `jarJar` on Forge
+and NeoForge. Other Nerion mods nest it too, and the loader keeps only the newest copy, so everyone
+gets the version they were built against or a newer one. A plugin or a plain program can shade it.
 
 Program against `NerionP2PClient` and the classes in `me.feeldev.nerionp2p.models`. Everything in
 `me.feeldev.nerionp2p.internal` (except `P2PApiException`) is internal and may change.
