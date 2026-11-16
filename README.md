@@ -17,13 +17,17 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.feeldev12:NerionP2PSDK:1.4.5'
+    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.4.5'
 }
 ```
 
-In a mod, also ship it inside your jar as a nested jar: `include` on Fabric (Loom), `jarJar` on Forge
-and NeoForge. Other Nerion mods nest it too, and the loader keeps only the newest copy, so everyone
-gets the version they were built against or a newer one. A plugin or a plain program can shade it.
+**In a mod**, don't ship the SDK: the NerionP2P mod (`nerionp2p`, 1.0.3 or newer) already brings it.
+Declare it as a dependency and players get both from the Nerion launcher:
+
+- Fabric (`fabric.mod.json`): `"depends": { "nerionp2p": ">=1.0.3" }`
+- NeoForge / Forge (`mods.toml`): a dependency on `modId = "nerionp2p"` with `versionRange = "[1.0.3,)"`
+
+**In a plugin or a plain Java program**, use `implementation` and shade it into your jar.
 
 Program against `NerionP2PClient` and the classes in `me.feeldev.nerionp2p.models`. Everything in
 `me.feeldev.nerionp2p.internal` (except `P2PApiException`) is internal and may change.
