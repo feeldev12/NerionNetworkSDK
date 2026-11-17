@@ -18,6 +18,10 @@ public enum ErrorCode {
     NOT_FOUND("not_found"),
     /** Doc §8.15 — thrown by {@code inviteFriendToSession} when the caller has no active play session. */
     NOT_PLAYING_INSTANCE("not_playing_instance"),
+    /** {@code POST /v1/p2p/join} reached a session whose host hasn't opened it yet — try again shortly. */
+    HOST_NOT_READY("host_not_ready"),
+    /** {@code POST /v1/p2p/join} reached a friends-only or private session without its invite code. */
+    JOIN_NOT_ALLOWED("join_not_allowed"),
     /** A code this SDK version doesn't recognize yet. Never throws — forward-compatible. */
     UNKNOWN("unknown");
 
