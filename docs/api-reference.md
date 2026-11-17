@@ -374,6 +374,11 @@ waits (up to a few seconds) for the host to report its relay extra ports, so voi
 other extra port reach the host too. You don't need your own retry loop around this call: by the
 time it returns, the launcher already did the waiting.
 
+Behind strict NATs the P2P attempt alone can take ~40 s before the launcher settles on relay, so
+give this request at least 60 s (the Java SDK does) and make it off the game thread. Timing out
+sooner and calling again starts a second join while the first is still running: the game ends up
+on relay while the first attempt opens an unused P2P connection that takes the extra ports.
+
 ### 8.11 `POST /v1/p2p/join/stop` — scope `p2p.join` — stop ONLY the joiner connection
 
 Tears down your own joiner-side bridge. Does not affect anyone else's hosting session — safe to

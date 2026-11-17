@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.5.0'
+    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.5.1'
 }
 ```
 
