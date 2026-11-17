@@ -367,23 +367,12 @@ Java SDK's `joinByTunnelIdWhenReady` does it for you).
 **Response `200`:** see §7 for the full shape and the relay-fallback contract trap. Read §7 before
 implementing this route's caller.
 
-**Note on timing (relay-first vs. P2P-first)**: whether this call blocks on the P2P attempt at all
-depends on a backend-computed relay-load safety valve you never see directly — the response shape
-itself doesn't change, only how fast it arrives.
-
-- **Relay-first (eligible)**: the call returns almost immediately with a `mode: "RELAY"` response —
-  it does **not** wait for P2P at all. The launcher keeps attempting P2P in the background after
-  responding. If that background attempt succeeds, you do **not** get a second HTTP response —
-  instead, the launcher fires its existing nerion-agent `ip-changed` live event for your instance
-  (the same mechanism used for a live server-address change), letting an attached mod hot-swap the
-  connection onto the new P2P port without restarting. If you don't handle that event, you simply
-  stay on the relay connection you already have — nothing breaks, there is just no upgrade for you.
-- **P2P-first (not eligible — older backend, valve tripped, or load signal unavailable)**: the
-  launcher internally retries a few times over roughly 2 seconds before falling back to relay,
-  because the host's own signaling needs a brief window to post its first offer after
-  `/v1/p2p/host` returns. This is today's original behavior, unchanged. You don't need to add your
-  own retry loop around this call either way — by the time it returns, the launcher has already
-  done whichever kind of waiting applies for you.
+**Timing**: the launcher tries P2P first, the same way Nerion's own invites do. It waits a couple
+of seconds for the host's first P2P offer, punches through, and answers with `mode: "P2P"` and
+`localBridgePort`. If P2P can't connect, it answers with `mode: "RELAY"` instead. Over relay it also
+waits (up to a few seconds) for the host to report its relay extra ports, so voice chat and any
+other extra port reach the host too. You don't need your own retry loop around this call: by the
+time it returns, the launcher already did the waiting.
 
 ### 8.11 `POST /v1/p2p/join/stop` — scope `p2p.join` — stop ONLY the joiner connection
 
