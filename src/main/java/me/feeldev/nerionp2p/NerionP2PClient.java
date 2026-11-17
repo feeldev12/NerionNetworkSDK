@@ -271,8 +271,9 @@ public final class NerionP2PClient {
      * {@link JoinResult#getConnectAddress()} for the relay-fallback trap (doc §7): always branch
      * on {@code mode}, never assume {@code localBridgePort} is populated. Scope {@code p2p.join}.
      * <p>
-     * The launcher already retries internally for ~2s before falling back to relay — you don't
-     * need your own retry loop around this call.
+     * The launcher tries the direct route first (up to ~40s behind strict NATs) before falling back
+     * to relay, so this call can block for up to a minute — call it off the game thread, and don't
+     * wrap it in your own retry loop.
      * <p>
      * Takes the invite's {@link InviteInfo#getToken() token} or its whole {@link InviteInfo#getUrl() URL}.
      * The code works for anyone, friend or not. Each call counts as one use of the invite, even
@@ -280,7 +281,7 @@ public final class NerionP2PClient {
      */
     public JoinResult joinByInviteCode(String inviteCode) {
         JsonBuilder body = new JsonBuilder().put("inviteCode", inviteToken(inviteCode));
-        return JoinResult.fromJson(http().post("/v1/p2p/join", body.build()));
+        return JoinResult.fromJson(http().post("/v1/p2p/join", body.build(), JOIN_TIMEOUT));
     }
 
     /**
@@ -322,7 +323,7 @@ public final class NerionP2PClient {
     /** {@code POST /v1/p2p/join} by tunnel ID with an optional share code. Scope {@code p2p.join}. */
     public JoinResult joinByTunnelId(String tunnelId, String shareCode) {
         JsonBuilder body = new JsonBuilder().put("tunnelId", tunnelId).put("shareCode", shareCode);
-        return JoinResult.fromJson(http().post("/v1/p2p/join", body.build()));
+        return JoinResult.fromJson(http().post("/v1/p2p/join", body.build(), JOIN_TIMEOUT));
     }
 
     /**
@@ -560,6 +561,11 @@ public final class NerionP2PClient {
     }
 
     private static final Duration HOST_READY_POLL = Duration.ofSeconds(1);
+    /**
+     * A join tries the direct route before falling back to relay; behind strict NATs that takes the
+     * launcher ~40s. Giving up sooner made callers retry on top of the attempt still running.
+     */
+    static final Duration JOIN_TIMEOUT = Duration.ofSeconds(60);
 
     /** An invite's token, from the token itself or the whole link ({@code https://…/join/tunnel/<token>}). */
     static String inviteToken(String inviteCodeOrUrl) {

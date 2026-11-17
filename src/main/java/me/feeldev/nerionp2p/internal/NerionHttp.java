@@ -8,6 +8,8 @@ import java.time.Duration;
 
 public final class NerionHttp {
 
+    private static final Duration DEFAULT_POST_TIMEOUT = Duration.ofSeconds(15);
+
     private final HttpClient client;
     private final String baseUrl;
     private final String token;
@@ -35,12 +37,16 @@ public final class NerionHttp {
     }
 
     public String post(String path, String jsonBody) {
+        return post(path, jsonBody, DEFAULT_POST_TIMEOUT);
+    }
+
+    public String post(String path, String jsonBody, Duration timeout) {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + token)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                .timeout(Duration.ofSeconds(15))
+                .timeout(timeout)
                 .build();
         return send(req);
     }
@@ -51,7 +57,7 @@ public final class NerionHttp {
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + token)
                 .POST(HttpRequest.BodyPublishers.noBody())
-                .timeout(Duration.ofSeconds(15))
+                .timeout(DEFAULT_POST_TIMEOUT)
                 .build();
         return send(req);
     }
