@@ -84,6 +84,16 @@ public final class P2PApiException extends RuntimeException {
         return errorCode == ErrorCode.NOT_PLAYING_INSTANCE;
     }
 
+    /** True when the session's host hasn't opened it yet: wait and join again (doc §8.10). */
+    public boolean isHostNotReady() {
+        return errorCode == ErrorCode.HOST_NOT_READY;
+    }
+
+    /** True when the session is only for the host's friends and no invite code was given (doc §8.10). */
+    public boolean isJoinNotAllowed() {
+        return errorCode == ErrorCode.JOIN_NOT_ALLOWED;
+    }
+
     /** The {@code "error"} object of the envelope; null when the body isn't one (e.g. a proxy's HTML page). */
     private static JsonObject errorObject(String body) {
         try {

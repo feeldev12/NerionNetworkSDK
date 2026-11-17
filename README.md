@@ -17,15 +17,15 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.4.5'
+    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.5.0'
 }
 ```
 
-**In a mod**, don't ship the SDK: the NerionP2P mod (`nerionp2p`, 1.0.3 or newer) already brings it.
+**In a mod**, don't ship the SDK: the NerionP2P mod (`nerionp2p`, 1.0.4 or newer) already brings it.
 Declare it as a dependency and players get both from the Nerion launcher:
 
-- Fabric (`fabric.mod.json`): `"depends": { "nerionp2p": ">=1.0.3" }`
-- NeoForge / Forge (`mods.toml`): a dependency on `modId = "nerionp2p"` with `versionRange = "[1.0.3,)"`
+- Fabric (`fabric.mod.json`): `"depends": { "nerionp2p": ">=1.0.4" }`
+- NeoForge / Forge (`mods.toml`): a dependency on `modId = "nerionp2p"` with `versionRange = "[1.0.4,)"`
 
 **In a plugin or a plain Java program**, use `implementation` and shade it into your jar.
 
@@ -81,6 +81,28 @@ int port = join.getConnectPort();
 // on disconnect:
 client.stopJoining();
 ```
+
+## Rooms with players who aren't friends
+
+For a minigame lobby that hands a room to a group of players, open the session as `UNLISTED`: it
+never shows up in any list, and anyone who has the tunnel ID can join.
+
+```java
+// the player chosen to host
+SessionInfo session = client.createSession(Visibility.UNLISTED);
+client.host(lanPort);
+sendToYourLobbyServer(session.getTunnelId());
+
+// everyone else, once your server passes them the tunnel ID
+JoinResult join = client.joinByTunnelIdWhenReady(tunnelId, Duration.ofSeconds(30));
+```
+
+`joinByTunnelIdWhenReady` waits while the host's world is still opening (`host_not_ready`) and
+throws any other error right away. With a plain `joinByTunnelId`, check `e.isHostNotReady()`.
+
+Invite codes work for anyone too: `getInvite()` works right after `createSession()`, has no use
+limit by default and doesn't expire. `joinByInviteCode` takes its token or its whole URL. Every
+join with the code counts one use, even when the connection fails afterwards.
 
 ## Invite a friend to your session
 

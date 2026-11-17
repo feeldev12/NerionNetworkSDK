@@ -4,6 +4,7 @@ import me.feeldev.nerionp2p.internal.CredentialFileWatcher;
 import me.feeldev.nerionp2p.internal.Json;
 import me.feeldev.nerionp2p.internal.JsonBuilder;
 import me.feeldev.nerionp2p.internal.NerionHttp;
+import me.feeldev.nerionp2p.internal.P2PApiException;
 import me.feeldev.nerionp2p.internal.P2PNetworkException;
 import me.feeldev.nerionp2p.models.ConnectionMode;
 import me.feeldev.nerionp2p.models.ConnectionState;
@@ -23,6 +24,7 @@ import me.feeldev.nerionp2p.models.RelayResult;
 import me.feeldev.nerionp2p.models.ResolveResult;
 import me.feeldev.nerionp2p.models.SessionInfo;
 import me.feeldev.nerionp2p.models.StatusResponse;
+import me.feeldev.nerionp2p.models.Visibility;
 
 import java.io.File;
 import java.net.URLEncoder;
@@ -129,10 +131,15 @@ public final class NerionP2PClient {
      * just call {@link #host} directly — it creates a tunnel implicitly if you haven't. Scope {@code p2p.session}.
      */
     public SessionInfo createSession() {
-        return createSession(null);
+        return createSession((String) null);
     }
 
-    /** Same as {@link #createSession()}, with an explicit visibility (e.g. {@code "PRIVATE"}). Scope {@code p2p.session}. */
+    /** Same as {@link #createSession()}, with an explicit {@link Visibility}. Scope {@code p2p.session}. */
+    public SessionInfo createSession(Visibility visibility) {
+        return createSession(visibility.name());
+    }
+
+    /** Same as {@link #createSession(Visibility)}, with the visibility by name (e.g. {@code "UNLISTED"}). */
     public SessionInfo createSession(String visibility) {
         JsonBuilder body = new JsonBuilder().put("visibility", visibility);
         return SessionInfo.fromJson(http().post("/v1/p2p/session", body.build()));
@@ -151,8 +158,12 @@ public final class NerionP2PClient {
      * {@code POST /v1/p2p/visibility} — changes MY OWN active tunnel's visibility, including a
      * session the launcher UI started. Same active-tunnel precondition as {@link #getInvite()}.
      * Scope {@code p2p.session}.
-     * @param visibility one of {@code PUBLIC}, {@code FRIENDS_ONLY}, {@code PRIVATE}.
      */
+    public void setVisibility(Visibility visibility) {
+        setVisibility(visibility.name());
+    }
+
+    /** Same as {@link #setVisibility(Visibility)}, with the visibility by name. */
     public void setVisibility(String visibility) {
         JsonBuilder body = new JsonBuilder().put("visibility", visibility);
         http().post("/v1/p2p/visibility", body.build());
@@ -161,8 +172,10 @@ public final class NerionP2PClient {
     // ======================== DISCOVERY (doc §8.5, §8.6) ========================
 
     /**
-     * {@code GET /v1/p2p/invite} — invite link for MY OWN active tunnel. Same precondition as
-     * {@link #getSession()}. Scope {@code p2p.session}.
+     * {@code GET /v1/p2p/invite} — invite link for MY OWN active tunnel. Works right after
+     * {@link #createSession}, before {@link #host}. Same precondition as {@link #getSession()}.
+     * The link has no use limit and doesn't expire unless the host sets one in the launcher.
+     * Scope {@code p2p.session}.
      */
     public InviteInfo getInvite() {
         return InviteInfo.fromJson(http().get("/v1/p2p/invite"));
@@ -173,7 +186,7 @@ public final class NerionP2PClient {
      * (e.g. to show a confirmation dialog with the owner's name). Scope {@code p2p.join}.
      */
     public ResolveResult resolveInvite(String inviteCode) {
-        JsonBuilder body = new JsonBuilder().put("inviteCode", inviteCode);
+        JsonBuilder body = new JsonBuilder().put("inviteCode", inviteToken(inviteCode));
         return ResolveResult.fromJson(http().post("/v1/p2p/resolve", body.build()));
     }
 
@@ -260,15 +273,50 @@ public final class NerionP2PClient {
      * <p>
      * The launcher already retries internally for ~2s before falling back to relay — you don't
      * need your own retry loop around this call.
+     * <p>
+     * Takes the invite's {@link InviteInfo#getToken() token} or its whole {@link InviteInfo#getUrl() URL}.
+     * The code works for anyone, friend or not. Each call counts as one use of the invite, even
+     * when connecting fails afterwards.
      */
     public JoinResult joinByInviteCode(String inviteCode) {
-        JsonBuilder body = new JsonBuilder().put("inviteCode", inviteCode);
+        JsonBuilder body = new JsonBuilder().put("inviteCode", inviteToken(inviteCode));
         return JoinResult.fromJson(http().post("/v1/p2p/join", body.build()));
     }
 
-    /** {@code POST /v1/p2p/join} by tunnel ID, without a share code. Scope {@code p2p.join}. */
+    /**
+     * {@code POST /v1/p2p/join} by tunnel ID, without a share code. Scope {@code p2p.join}.
+     * <p>
+     * Anyone can join a {@link Visibility#PUBLIC} or {@link Visibility#UNLISTED} session this way;
+     * a {@code FRIENDS_ONLY} one only takes the host's friends ({@code join_not_allowed} otherwise).
+     * Throws {@code host_not_ready} while the host hasn't called {@link #host} yet — see
+     * {@link #joinByTunnelIdWhenReady}.
+     */
     public JoinResult joinByTunnelId(String tunnelId) {
         return joinByTunnelId(tunnelId, null);
+    }
+
+    /**
+     * {@link #joinByTunnelId(String)}, waiting up to {@code timeout} for the host to open the
+     * session. For rooms where everyone gets the tunnel ID at once and the host's world takes a
+     * moment to start. Other errors are thrown right away.
+     */
+    public JoinResult joinByTunnelIdWhenReady(String tunnelId, Duration timeout) {
+        long deadline = System.currentTimeMillis() + timeout.toMillis();
+        while (true) {
+            try {
+                return joinByTunnelId(tunnelId);
+            } catch (P2PApiException e) {
+                if (!e.isHostNotReady() || System.currentTimeMillis() + HOST_READY_POLL.toMillis() > deadline) {
+                    throw e;
+                }
+            }
+            try {
+                Thread.sleep(HOST_READY_POLL.toMillis());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new P2PNetworkException("Interrupted while waiting for the host of " + tunnelId, e);
+            }
+        }
     }
 
     /** {@code POST /v1/p2p/join} by tunnel ID with an optional share code. Scope {@code p2p.join}. */
@@ -509,5 +557,23 @@ public final class NerionP2PClient {
             fragments.add(p.toJson());
         }
         return JsonBuilder.arrayOfObjects(fragments);
+    }
+
+    private static final Duration HOST_READY_POLL = Duration.ofSeconds(1);
+
+    /** An invite's token, from the token itself or the whole link ({@code https://…/join/tunnel/<token>}). */
+    static String inviteToken(String inviteCodeOrUrl) {
+        if (inviteCodeOrUrl == null) {
+            return null;
+        }
+        String trimmed = inviteCodeOrUrl.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        int query = trimmed.indexOf('?');
+        if (query >= 0) {
+            trimmed = trimmed.substring(0, query);
+        }
+        return trimmed.substring(trimmed.lastIndexOf('/') + 1);
     }
 }

@@ -147,7 +147,9 @@ human-readable string that may change wording between launcher versions without 
 | `not_playing_instance` | 403 | `POST /v1/social/invite/{friendPlayerAccountId}` was called while the caller has no active play session — you must actually be playing an instance to invite someone to it. |
 | `backend_error` | 502 | The launcher's own backend call failed for a reason not covered above (network error, unexpected status). |
 | `auth_unavailable` | 503 | The launcher can't currently authenticate to its own backend on your behalf (e.g. called too early during startup). Retry shortly. |
-| `not_found` | 404 | Unknown route, or a request to an unversioned/unrecognized path. |
+| `not_found` | 404 | Unknown route, or a request to an unversioned/unrecognized path. Also returned by `/v1/p2p/join` when the host already closed the session. |
+| `host_not_ready` | 409 | `/v1/p2p/join` reached a session whose host hasn't started hosting yet (no `/v1/p2p/host` or `/v1/p2p/relay` so far). Wait a moment and join again. |
+| `join_not_allowed` | 403 | `/v1/p2p/join` by `tunnelId` reached a `FRIENDS_ONLY` or `PRIVATE` session and you aren't the host's friend. Use an `UNLISTED`/`PUBLIC` session, or join with its invite code. |
 
 Note: `not_hosting` is a reserved code that is **never actually returned**. `POST /v1/p2p/stop` and
 `POST /v1/p2p/join/stop` are both safe to call even when nothing is running — they no-op instead
@@ -221,7 +223,16 @@ any P2P/relay connection yet — pair this with `/v1/p2p/host` or `/v1/p2p/relay
 ```json
 { "visibility": "PRIVATE" }
 ```
-`visibility` is optional; omit it to use the backend's default.
+`visibility` is optional; omit it to use the backend's default (`FRIENDS_ONLY`).
+
+| `visibility` | Listed | Who can join |
+|---|---|---|
+| `PUBLIC` | Yes, for everyone | Anyone signed in to Nerion, by `tunnelId`. |
+| `UNLISTED` | Never | Anyone who has the `tunnelId`. Made for rooms a mod or server hands out itself. |
+| `FRIENDS_ONLY` | To the host's friends | The host's friends by `tunnelId`; anyone with the invite code. |
+| `PRIVATE` | Never | Only with the invite code. |
+
+The same values work for `POST /v1/p2p/visibility`.
 
 **Response `201`:**
 ```json
@@ -241,12 +252,16 @@ Requires you already have an active tunnel for this session (created via `/v1/p2
 
 ### 8.5 `GET /v1/p2p/invite` — scope `p2p.session` — invite link for MY OWN active tunnel
 
-Requires an active tunnel, same precondition as §8.4.
+Requires an active tunnel, same precondition as §8.4. Works right after `/v1/p2p/session`, before
+you start hosting.
 
 **Response `200`:**
 ```json
-{ "url": "https://nerionmc.com/join/xyz", "token": "xyz", "maxUses": 10, "usesCount": 2, "expiresAt": "2026-09-01T00:00:00Z" }
+{ "url": "https://nerionmc.com/join/tunnel/xyz", "token": "xyz", "maxUses": null, "usesCount": 2, "expiresAt": null }
 ```
+`maxUses: null` means no limit, the default. Links don't expire today (`expiresAt` is always
+`null`). Each resolve of the code (§8.6, or a join by `inviteCode`) counts one use, even when the
+connection fails afterwards.
 
 ### 8.6 `POST /v1/p2p/resolve` — scope `p2p.join` — resolve SOMEONE ELSE'S invite code
 
@@ -336,11 +351,18 @@ never neither. Both missing or both present → `400 invalid_target`.
 ```json
 { "inviteCode": "xyz" }
 ```
+`inviteCode` is the invite's `token`, not its URL (the Java SDK accepts either and sends the
+token). The code lets anyone in, friend or not, whatever the session's visibility.
 
 **Request body (tunnel ID form):**
 ```json
 { "tunnelId": "abc123", "shareCode": "friend-share-1" }
 ```
+
+By `tunnelId`, anyone can join a `PUBLIC` or `UNLISTED` session; a `FRIENDS_ONLY` one only takes
+the host's friends (`403 join_not_allowed`). While the host hasn't started hosting yet you get
+`409 host_not_ready` instead of an address nothing listens on: wait a moment and call again (the
+Java SDK's `joinByTunnelIdWhenReady` does it for you).
 
 **Response `200`:** see §7 for the full shape and the relay-fallback contract trap. Read §7 before
 implementing this route's caller.
