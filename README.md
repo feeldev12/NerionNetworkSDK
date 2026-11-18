@@ -22,8 +22,10 @@ dependencies {
 ```
 
 **In a mod**, don't ship the SDK (no `include`, `jarJar` or shading): the jar is itself a mod with
-no code, **Nerion Network SDK** (`nerionnetwork`), and the Nerion launcher puts it in every instance.
-One copy per game, shared by every mod, always the latest. Declare it as a dependency:
+no code, **Nerion Network SDK** (`nerionnetwork`). One copy per game, shared by every mod, always the
+latest. Instances that use NerionP2P or NerionSocial get it by themselves; for your own mod, the
+instance's creator imports **Nerion Network SDK** from the system mods in the Nerion dashboard.
+Declare it as a dependency:
 
 - Fabric (`fabric.mod.json`): `"depends": { "nerionnetwork": ">=2.0.0" }`
 - NeoForge / Forge (`mods.toml`): a dependency on `modId = "nerionnetwork"` with `versionRange = "[2.0.0,)"` and
