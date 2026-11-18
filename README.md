@@ -26,7 +26,8 @@ no code, **Nerion Network SDK** (`nerionnetwork`), and the Nerion launcher puts 
 One copy per game, shared by every mod, always the latest. Declare it as a dependency:
 
 - Fabric (`fabric.mod.json`): `"depends": { "nerionnetwork": ">=2.0.0" }`
-- NeoForge / Forge (`mods.toml`): a dependency on `modId = "nerionnetwork"` with `versionRange = "[2.0.0,)"`
+- NeoForge / Forge (`mods.toml`): a dependency on `modId = "nerionnetwork"` with `versionRange = "[2.0.0,)"` and
+  `mandatory = true` (Forge rejects a dependency without it)
 
 To try your mod from your IDE, add it to the game you run there too (Loom: `localRuntime`,
 ForgeGradle/NeoGradle: `runtimeOnly`).
