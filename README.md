@@ -37,15 +37,6 @@ ForgeGradle/NeoGradle: `runtimeOnly`).
 From 2.0 on, releases only add things: nothing public is removed or changed, so a mod built for
 2.0 keeps working with any newer 2.x.
 
-### Coming from 1.x (NerionP2PSDK)
-
-The repository was NerionP2PSDK: on JitPack it's now `com.github.feeldev12:NerionNetworkSDK`.
-
-The package is `me.feeldev.nerionnetwork` (was `me.feeldev.nerionp2p`) and the classes are
-`NerionNetworkClient`, `NerionNetworkConfig`, `NetworkApiException` and `NetworkException`
-(were `NerionP2PClient`, `NerionP2PConfig`, `P2PApiException`, `P2PNetworkException`). The methods
-are the same. Depend on `nerionnetwork` instead of `nerionp2p`.
-
 Program against `NerionNetworkClient` and the classes in `me.feeldev.nerionnetwork.models`. Everything in
 `me.feeldev.nerionnetwork.internal` (except `NetworkApiException`) is internal and may change.
 
