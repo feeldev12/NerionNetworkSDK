@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.github.feeldev12:NerionP2PSDK:2.0.0'
+    compileOnly 'com.github.feeldev12:NerionNetworkSDK:2.0.0'
 }
 ```
 
@@ -38,6 +38,8 @@ From 2.0 on, releases only add things: nothing public is removed or changed, so 
 2.0 keeps working with any newer 2.x.
 
 ### Coming from 1.x (NerionP2PSDK)
+
+The repository was NerionP2PSDK: on JitPack it's now `com.github.feeldev12:NerionNetworkSDK`.
 
 The package is `me.feeldev.nerionnetwork` (was `me.feeldev.nerionp2p`) and the classes are
 `NerionNetworkClient`, `NerionNetworkConfig`, `NetworkApiException` and `NetworkException`
