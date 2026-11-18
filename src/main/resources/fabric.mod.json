@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "nerionnetwork",
+  "version": "${version}",
+  "name": "Nerion Network SDK",
+  "description": "Library for mods: connect players through Nerion Launcher (P2P or relay), friends, rooms and invites. Does nothing on its own.",
+  "authors": ["FeelDev"],
+  "contact": { "sources": "https://github.com/feeldev12/NerionP2PSDK" },
+  "license": "MIT",
+  "environment": "*",
+  "depends": {
+    "java": ">=17"
+  }
+}

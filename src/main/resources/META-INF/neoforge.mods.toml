@@ -1,0 +1,11 @@
+# NeoForge 1.20.5+: a mod with no code, only the library classes.
+modLoader = "lowcodefml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "nerionnetwork"
+version = "${version}"
+displayName = "Nerion Network SDK"
+authors = "FeelDev"
+description = '''Library for mods: connect players through Nerion Launcher (P2P or relay), friends, rooms and invites. Does nothing on its own.'''

@@ -1,7 +1,7 @@
-# NerionP2PSDK
+# Nerion Network SDK
 
-Java client for the Nerion Launcher's local mod API (`/v1/*`): host a world over P2P, join with an
-invite code, invite friends and manage friend requests from your own mod or plugin.
+Java client for the Nerion Launcher's local mod API (`/v1/*`): host a world (P2P, or through the
+relay when P2P can't connect), join with an invite code, invite friends and manage friend requests from your own mod or plugin.
 
 - No dependencies and no Minecraft classes: works in Fabric, Forge and NeoForge mods, Bukkit/Paper
   plugins and plain Java tools. Java 17+.
@@ -17,32 +17,46 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.6.0'
+    compileOnly 'com.github.feeldev12:NerionP2PSDK:2.0.0'
 }
 ```
 
-**In a mod**, don't ship the SDK: the NerionP2P mod (`nerionp2p`, 1.0.4 or newer) already brings it.
-Declare it as a dependency and players get both from the Nerion launcher:
+**In a mod**, don't ship the SDK (no `include`, `jarJar` or shading): the jar is itself a mod with
+no code, **Nerion Network SDK** (`nerionnetwork`), and the Nerion launcher puts it in every instance.
+One copy per game, shared by every mod, always the latest. Declare it as a dependency:
 
-- Fabric (`fabric.mod.json`): `"depends": { "nerionp2p": ">=1.0.4" }`
-- NeoForge / Forge (`mods.toml`): a dependency on `modId = "nerionp2p"` with `versionRange = "[1.0.4,)"`
+- Fabric (`fabric.mod.json`): `"depends": { "nerionnetwork": ">=2.0.0" }`
+- NeoForge / Forge (`mods.toml`): a dependency on `modId = "nerionnetwork"` with `versionRange = "[2.0.0,)"`
+
+To try your mod from your IDE, add it to the game you run there too (Loom: `localRuntime`,
+ForgeGradle/NeoGradle: `runtimeOnly`).
 
 **In a plugin or a plain Java program**, use `implementation` and shade it into your jar.
 
-Program against `NerionP2PClient` and the classes in `me.feeldev.nerionp2p.models`. Everything in
-`me.feeldev.nerionp2p.internal` (except `P2PApiException`) is internal and may change.
+From 2.0 on, releases only add things: nothing public is removed or changed, so a mod built for
+2.0 keeps working with any newer 2.x.
+
+### Coming from 1.x (NerionP2PSDK)
+
+The package is `me.feeldev.nerionnetwork` (was `me.feeldev.nerionp2p`) and the classes are
+`NerionNetworkClient`, `NerionNetworkConfig`, `NetworkApiException` and `NetworkException`
+(were `NerionP2PClient`, `NerionP2PConfig`, `P2PApiException`, `P2PNetworkException`). The methods
+are the same. Depend on `nerionnetwork` instead of `nerionp2p`.
+
+Program against `NerionNetworkClient` and the classes in `me.feeldev.nerionnetwork.models`. Everything in
+`me.feeldev.nerionnetwork.internal` (except `NetworkApiException`) is internal and may change.
 
 ## Connect
 
 ```java
-NerionP2PClient client = new NerionP2PClient();
+NerionNetworkClient client = new NerionNetworkClient();
 client.connect(); // non-blocking: waits in the background until the launcher is ready
 ```
 
 To run code once it's connected, or to tune the client, pass a config:
 
 ```java
-NerionP2PClient client = new NerionP2PClient(NerionP2PConfig.builder()
+NerionNetworkClient client = new NerionNetworkClient(NerionNetworkConfig.builder()
     .onConnected(() -> System.out.println("Connected to the Nerion launcher"))
     .build());
 ```
@@ -172,14 +186,14 @@ client.removeFriend(friend.getPlayerAccountId());
 
 ## Error handling
 
-Every non-2xx response throws `P2PApiException`. Key your handling off `getErrorCode()`
+Every non-2xx response throws `NetworkApiException`. Key your handling off `getErrorCode()`
 (a typed `ErrorCode` enum with an `UNKNOWN` fallback), never off `getApiMessage()` — the message
 text can change wording between launcher versions without notice.
 
 ```java
 try {
     client.host(25565);
-} catch (P2PApiException e) {
+} catch (NetworkApiException e) {
     if (e.getErrorCode() == ErrorCode.P2P_SESSION_ACTIVE) {
         client.stop(); // already hosting/joining — tear down first, then retry
     }
