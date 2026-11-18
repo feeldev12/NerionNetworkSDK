@@ -94,6 +94,31 @@ public final class P2PApiException extends RuntimeException {
         return errorCode == ErrorCode.JOIN_NOT_ALLOWED;
     }
 
+    /** True when the session's host banned the caller from it (join or participants). */
+    public boolean isTunnelBanned() {
+        return errorCode == ErrorCode.TUNNEL_BANNED;
+    }
+
+    /** True when the invited player is banned from the caller's session. */
+    public boolean isPlayerBanned() {
+        return errorCode == ErrorCode.PLAYER_BANNED;
+    }
+
+    /** True when the caller sent too many invites to the same non-friend in the last hour. */
+    public boolean isInviteRateLimited() {
+        return errorCode == ErrorCode.INVITE_RATE_LIMITED;
+    }
+
+    /** True when the caller isn't the host or a current player of the session. */
+    public boolean isNotTunnelParticipant() {
+        return errorCode == ErrorCode.NOT_TUNNEL_PARTICIPANT;
+    }
+
+    /** True when that player can't be invited (host, self, or a non-friend who wasn't a recent player). */
+    public boolean isInvalidInvitee() {
+        return errorCode == ErrorCode.INVALID_INVITEE;
+    }
+
     /** The {@code "error"} object of the envelope; null when the body isn't one (e.g. a proxy's HTML page). */
     private static JsonObject errorObject(String body) {
         try {

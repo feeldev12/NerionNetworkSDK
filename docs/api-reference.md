@@ -150,6 +150,11 @@ human-readable string that may change wording between launcher versions without 
 | `not_found` | 404 | Unknown route, or a request to an unversioned/unrecognized path. Also returned by `/v1/p2p/join` when the host already closed the session. |
 | `host_not_ready` | 409 | `/v1/p2p/join` reached a session whose host hasn't started hosting yet (no `/v1/p2p/host` or `/v1/p2p/relay` so far). Wait a moment and join again. |
 | `join_not_allowed` | 403 | `/v1/p2p/join` by `tunnelId` reached a `FRIENDS_ONLY` or `PRIVATE` session and you aren't the host's friend. Use an `UNLISTED`/`PUBLIC` session, or join with its invite code. |
+| `tunnel_banned` | 403 | The session's host banned you from it (`/v1/p2p/join`, `/v1/p2p/participants`). |
+| `player_banned` | 409 | The player you tried to invite is banned from your session. |
+| `invite_rate_limited` | 429 | Too many invites to the same non-friend in the last hour (3). Try later. |
+| `not_tunnel_participant` | 403 | You aren't the host or a current player of that session. |
+| `invalid_invitee` | 400 | That player can't be invited: the host, yourself, or a non-friend who wasn't a recent player of the session. |
 
 Note: `not_hosting` is a reserved code that is **never actually returned**. `POST /v1/p2p/stop` and
 `POST /v1/p2p/join/stop` are both safe to call even when nothing is running — they no-op instead
@@ -470,9 +475,18 @@ explicitly, the same "never send your own instanceId" shape every `/v1/p2p/*` ro
 - `404 backend_error` (wrapping the backend's own 404) — `friendPlayerAccountId` doesn't resolve to a
   real player account.
 
-Note: this route does not itself verify the two players are actually friends — that's enforced
-server-side by `FriendshipService`, surfaced here as a generic `backend_error` if it ever rejects the
-pair for a reason not covered by the table above.
+When the caller hosts or joined a P2P session (`/v1/p2p/host`, `/v1/p2p/join`), the invite is to
+**that session**, and it also accepts a player who isn't the caller's friend if they were in the
+session (still in it, or left at most 2 hours ago) — like "recent players" in Steam. Any current
+player of the session can invite, not only the host. The Java SDK also exposes this route as
+`inviteToSession(playerAccountId)`; check `canInvite` from §8.23 before offering it.
+
+**More errors on a session invite:** `409 player_banned`, `429 invite_rate_limited` (3 per hour to
+the same non-friend), `400 invalid_invitee`, `403 not_tunnel_participant`.
+
+Note: outside a P2P session this route does not itself verify the two players are actually friends —
+that's enforced server-side by `FriendshipService`, surfaced here as a generic `backend_error` if it
+ever rejects the pair for a reason not covered by the table above.
 
 ### 8.16 `GET /v1/social/requests` / `GET /v1/social/requests/sent` — scope `social.friends.read`
 
@@ -557,6 +571,61 @@ id `/v1/social/friends` returns per entry as `friendshipId` (NOT the same value 
 
 **Response `200`:** `{}`
 
+### 8.23 `GET /v1/p2p/participants` — scope `p2p.status` — players of my session
+
+The players of the session the caller hosts or joined, **including those who already left**, so a mod
+can show them and invite them back. Needs capability `p2p.participants` in `/v1/ping`.
+
+**Response `200`:**
+
+```json
+{
+  "tunnelId": "t-1",
+  "role": "HOST",
+  "participants": [
+    {
+      "playerAccountId": "p-1",
+      "displayName": "Ana",
+      "avatarUrl": "https://…",
+      "minecraftUuid": "…",
+      "minecraftName": "Ana",
+      "friend": false,
+      "inSession": false,
+      "firstJoinedAt": "2026-11-18T10:00:00Z",
+      "leftAt": "2026-11-18T10:30:00Z",
+      "banned": false,
+      "canInvite": true
+    }
+  ]
+}
+```
+
+`role` is `HOST` or `PLAYER`. `playerAccountId` is `null` for a player who joined without a Nerion
+account (shown, but can't be invited). `canInvite` says whether the caller can invite them right now.
+The host itself isn't listed. **Errors:** `404 no_active_session` (no hosted or joined session),
+`403 tunnel_banned`.
+
+### 8.24 `POST /v1/p2p/players-event` — scope `p2p.host` — the host reports a join or leave
+
+```json
+{ "type": "JOINED", "uuid": "…", "name": "Ana" }
+```
+
+`type` is `JOINED` or `LEFT`. Call it from your server's player join/leave hooks while hosting: it
+records players who joined without a Nerion account and keeps `inSession`/`leftAt` right. The
+launcher resolves the Nerion account from the Minecraft account. **Response `200`:** `{}`
+
+### 8.25 `POST /v1/p2p/ban` — scope `p2p.host` — ban a player from my session
+
+```json
+{ "playerAccountId": "p-1", "banned": true }
+```
+
+or by Minecraft account: `{ "uuid": "…", "name": "Steve", "banned": true }`. `banned` defaults to
+`true`; `false` lifts the ban. A banned player can't join the session again (`tunnel_banned`) nor be
+invited (`player_banned`). It only covers the session: kick/ban them from your game server too.
+**Response `200`:** `{}`. **Errors:** `400 invalid_target` without `playerAccountId` or `uuid`.
+
 ## 9. Example: a client mod's typical hosting flow
 
 ```
@@ -594,6 +663,18 @@ id `/v1/social/friends` returns per entry as `friendshipId` (NOT the same value 
 Requires the caller to already be playing an instance (typically true for a client mod, since it's
 running inside the Minecraft process the launcher just started) — see `403 not_playing_instance`
 in §8.15 if not.
+
+## 10.55. Example: players of the session
+
+```
+Host, while hosting:
+  on player join  → POST /v1/p2p/players-event {"type":"JOINED","uuid","name"}
+  on player leave → POST /v1/p2p/players-event {"type":"LEFT","uuid","name"}
+  ban             → POST /v1/p2p/ban {"playerAccountId" or "uuid", "banned": true}  (+ ban on the server)
+Any player of the session:
+  GET  /v1/p2p/participants → list, with who left and `canInvite`
+  POST /v1/social/invite/{playerAccountId}  → invite a friend or a recent player back
+```
 
 ## 10.6. Example: managing friend requests
 

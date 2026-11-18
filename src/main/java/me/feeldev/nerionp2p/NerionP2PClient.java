@@ -23,6 +23,8 @@ import me.feeldev.nerionp2p.models.PortsResponse;
 import me.feeldev.nerionp2p.models.RelayResult;
 import me.feeldev.nerionp2p.models.ResolveResult;
 import me.feeldev.nerionp2p.models.SessionInfo;
+import me.feeldev.nerionp2p.models.SessionParticipant;
+import me.feeldev.nerionp2p.models.SessionParticipants;
 import me.feeldev.nerionp2p.models.StatusResponse;
 import me.feeldev.nerionp2p.models.Visibility;
 
@@ -358,6 +360,65 @@ public final class NerionP2PClient {
         return ConnectionMode.fromWire(Json.parseObject(response).getOptionalString("mode"));
     }
 
+    // ======================== SESSION PLAYERS ========================
+
+    /**
+     * {@code GET /v1/p2p/participants} — the players of the session the caller hosts or joined,
+     * including those who already left (to show them and invite them back). Scope {@code p2p.status}.
+     * Needs a launcher whose {@link #ping()} {@link PingResponse#supportsSessionPlayers() supports it}.
+     * <p>
+     * Throws {@link me.feeldev.nerionp2p.internal.P2PApiException} with
+     * {@link me.feeldev.nerionp2p.internal.P2PApiException#isNoActiveSession()} when the caller neither
+     * hosts nor joined a session.
+     */
+    public SessionParticipants getSessionParticipants() {
+        return SessionParticipants.fromJson(http().get("/v1/p2p/participants"));
+    }
+
+    /**
+     * {@code POST /v1/p2p/players-event} — the host's game tells the launcher a player joined. Call
+     * it from your server's player-join hook while hosting; it also records players who joined
+     * without a Nerion account. Host only, scope {@code p2p.host}.
+     */
+    public void reportPlayerJoined(String minecraftUuid, String minecraftName) {
+        reportPlayerEvent("JOINED", minecraftUuid, minecraftName);
+    }
+
+    /** {@code POST /v1/p2p/players-event} for a player who left. Host only, scope {@code p2p.host}. */
+    public void reportPlayerLeft(String minecraftUuid, String minecraftName) {
+        reportPlayerEvent("LEFT", minecraftUuid, minecraftName);
+    }
+
+    private void reportPlayerEvent(String type, String minecraftUuid, String minecraftName) {
+        String body = new JsonBuilder().put("type", type).put("uuid", minecraftUuid).put("name", minecraftName).build();
+        http().post("/v1/p2p/players-event", body);
+    }
+
+    /**
+     * {@code POST /v1/p2p/ban} — bans (or, with {@code banned=false}, unbans) a player from the
+     * caller's hosted session by Nerion account id; a banned player can't join it again. This only
+     * covers the session: also kick/ban them from your game server. Host only, scope {@code p2p.host}.
+     */
+    public void setPlayerBanned(String playerAccountId, boolean banned) {
+        if (playerAccountId == null || playerAccountId.isBlank()) {
+            throw new IllegalArgumentException("playerAccountId is required");
+        }
+        String body = new JsonBuilder().put("playerAccountId", playerAccountId).put("banned", banned).build();
+        http().post("/v1/p2p/ban", body);
+    }
+
+    /**
+     * {@link #setPlayerBanned(String, boolean)} by Minecraft UUID, for a player without a Nerion
+     * account (or when you only have the UUID). Host only, scope {@code p2p.host}.
+     */
+    public void setPlayerBannedByUuid(String minecraftUuid, String minecraftName, boolean banned) {
+        if (minecraftUuid == null || minecraftUuid.isBlank()) {
+            throw new IllegalArgumentException("minecraftUuid is required");
+        }
+        String body = new JsonBuilder().put("uuid", minecraftUuid).put("name", minecraftName).put("banned", banned).build();
+        http().post("/v1/p2p/ban", body);
+    }
+
     /**
      * Blocks, polling {@link #status()} at {@code pollInterval}, until the state is one of
      * {@code targetStates} or {@code timeout} elapses. A thin convenience wrapper around the
@@ -442,6 +503,24 @@ public final class NerionP2PClient {
      */
     public void inviteFriendToSession(String friendPlayerAccountId) {
         http().postNoBody("/v1/social/invite/" + encodePathSegment(friendPlayerAccountId));
+    }
+
+    /**
+     * Invites a player to the P2P session the caller hosts or joined, like "recent players" in
+     * Steam: a friend of the caller, or someone who was in this session (still in it, or left at
+     * most 2 hours ago) even if they aren't friends. Any current player of the session can invite,
+     * not only the host. Same route as {@link #inviteFriendToSession(String)}; use
+     * {@link SessionParticipant#canInvite()} to decide whether to offer it. Scope
+     * {@code social.friends.invite}.
+     * <p>
+     * Errors: {@code isPlayerBanned()}, {@code isInviteRateLimited()} (3 per hour to the same
+     * non-friend), {@code isInvalidInvitee()}, {@code isNotTunnelParticipant()} on
+     * {@link me.feeldev.nerionp2p.internal.P2PApiException}.
+     *
+     * @param playerAccountId {@link SessionParticipant#getPlayerAccountId()} or {@link Friend#getPlayerAccountId()}.
+     */
+    public void inviteToSession(String playerAccountId) {
+        inviteFriendToSession(playerAccountId);
     }
 
     // ======================== SOCIAL — FRIEND REQUESTS (doc §8.16-§8.20) ========================
