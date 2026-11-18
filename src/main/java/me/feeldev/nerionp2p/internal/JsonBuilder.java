@@ -25,6 +25,11 @@ public final class JsonBuilder {
         return this;
     }
 
+    public JsonBuilder put(String key, boolean value) {
+        fields.add(Json.quote(key) + ":" + value);
+        return this;
+    }
+
     /** Embeds a pre-built JSON fragment (object/array) verbatim under this key. Omitted when null. */
     public JsonBuilder putRaw(String key, String rawJson) {
         if (rawJson != null) {

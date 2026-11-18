@@ -22,6 +22,16 @@ public enum ErrorCode {
     HOST_NOT_READY("host_not_ready"),
     /** {@code POST /v1/p2p/join} reached a friends-only or private session without its invite code. */
     JOIN_NOT_ALLOWED("join_not_allowed"),
+    /** The session's host banned the caller: it can't join that session again. */
+    TUNNEL_BANNED("tunnel_banned"),
+    /** The player being invited is banned from the caller's session. */
+    PLAYER_BANNED("player_banned"),
+    /** Too many invites to the same non-friend in the last hour — try again later. */
+    INVITE_RATE_LIMITED("invite_rate_limited"),
+    /** The caller isn't the host or a current player of that session. */
+    NOT_TUNNEL_PARTICIPANT("not_tunnel_participant"),
+    /** Can't invite that player: the host, the caller themselves, or a non-friend who isn't a recent player of the session. */
+    INVALID_INVITEE("invalid_invitee"),
     /** A code this SDK version doesn't recognize yet. Never throws — forward-compatible. */
     UNKNOWN("unknown");
 

@@ -56,6 +56,32 @@ public final class JsonObject {
         return value != null && as(key, value, Boolean.class);
     }
 
+    /**
+     * A timestamp as an ISO-8601 string ({@code "2026-11-18T10:15:30Z"}) or epoch seconds, possibly
+     * fractional; {@code null} when the key is missing or null.
+     */
+    public java.time.Instant getOptionalInstant(String key) {
+        Object value = values.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String text) {
+            try {
+                return java.time.Instant.parse(text);
+            } catch (java.time.format.DateTimeParseException e) {
+                throw new JsonException("'" + key + "' is not an ISO-8601 instant");
+            }
+        }
+        if (value instanceof Long seconds) {
+            return java.time.Instant.ofEpochSecond(seconds);
+        }
+        if (value instanceof Double seconds) {
+            long whole = (long) Math.floor(seconds);
+            return java.time.Instant.ofEpochSecond(whole, Math.round((seconds - whole) * 1_000_000_000L));
+        }
+        throw new JsonException("'" + key + "' is not a timestamp");
+    }
+
     /** The objects of an array field; empty when the key is missing or null. */
     public List<JsonObject> getObjectList(String key) {
         List<JsonObject> result = new ArrayList<>();

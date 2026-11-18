@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.5.1'
+    compileOnly 'com.github.feeldev12:NerionP2PSDK:1.6.0'
 }
 ```
 
@@ -119,6 +119,36 @@ for (Friend friend : friends) {
 // running inside the Minecraft process the launcher just started)
 client.inviteFriendToSession(friends.get(0).getPlayerAccountId());
 ```
+
+## Players of the session
+
+Everyone who joined the session you host or joined, including those who left, so you can show
+them and invite them back even if they aren't friends (like "recent players" in Steam). Any player
+of the session can invite; only the host reports joins/leaves and bans. Needs a launcher with
+`client.ping().supportsSessionPlayers()`.
+
+```java
+// Host: from your server's player join/leave hooks while hosting
+client.reportPlayerJoined(uuid, name);
+client.reportPlayerLeft(uuid, name);
+
+// Anyone in the session
+for (SessionParticipant p : client.getSessionParticipants().getParticipants()) {
+    String state = p.isInSession() ? "playing" : "left at " + p.getLeftAt();
+    System.out.println(p.getMinecraftName() + " — " + state);
+    if (!p.isInSession() && p.canInvite()) {
+        client.inviteToSession(p.getPlayerAccountId()); // friend or not: they were in this session
+    }
+}
+
+// Host: ban from the session (also kick/ban them from your game server)
+client.setPlayerBanned(p.getPlayerAccountId(), true);
+client.setPlayerBannedByUuid(uuid, name, true);      // players without a Nerion account
+```
+
+Errors to handle: `isInviteRateLimited()` (3 invites per hour to the same non-friend),
+`isPlayerBanned()`, `isInvalidInvitee()`, `isNotTunnelParticipant()`, and `isTunnelBanned()` when
+the host banned you.
 
 ## Manage friend requests
 

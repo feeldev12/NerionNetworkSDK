@@ -24,6 +24,20 @@ public final class PingResponse {
         return capabilities;
     }
 
+    public boolean hasCapability(String capability) {
+        for (String c : capabilities) {
+            if (c.equals(capability)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Whether the launcher has the session-players routes (participants, players-event, ban). */
+    public boolean supportsSessionPlayers() {
+        return hasCapability("p2p.participants");
+    }
+
     public static PingResponse fromJson(String json) {
         JsonObject o = Json.parseObject(json);
         return new PingResponse(o.getInt("apiVersion"), o.getStringList("capabilities").toArray(new String[0]));
