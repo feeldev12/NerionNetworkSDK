@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'me.feeldev'
-version = '1.6.0'
+version = '2.0.0'
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -18,8 +18,18 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 17
 }
 
+// The jar is also a mod with no code (Fabric, Forge, NeoForge), so a game loads ONE copy that
+// every mod shares instead of each mod nesting its own. Its metadata gets the version here.
+processResources {
+    def props = [version: project.version]
+    inputs.properties props
+    filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
+        expand props
+    }
+}
+
 base {
-    archivesName = 'nerion-p2p-sdk'
+    archivesName = 'nerion-network-sdk'
 }
 
 repositories {
@@ -41,5 +51,12 @@ publishing {
             artifactId base.archivesName.get()
             from components.java
         }
+    }
+}
+
+// A stable module name for Forge/NeoForge (they put every mod jar in its own module).
+jar {
+    manifest {
+        attributes('Automatic-Module-Name': 'me.feeldev.nerionnetwork')
     }
 }
